@@ -1,0 +1,15 @@
+{
+  "name": "Cielos de Ovalle",
+  "short_name": "Cielos",
+  "description": "Mapa del cielo en tiempo real para el Limarí y la Región de Coquimbo.",
+  "lang": "es",
+  "start_url": "./cielos-de-ovalle.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#02070b",
+  "theme_color": "#02070b",
+  "icons": [
+    { "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

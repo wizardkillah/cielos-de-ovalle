@@ -1,0 +1,13 @@
+# Copia duplicada de la bóveda (v1.0, con nombres de archivo dañados al descomprimir)
+/Cielos-de-Ovalle-boveda/
+
+# Salida de build.py: la app publicada es App/cielos-de-ovalle.html
+/App/fuente/dist/
+
+# Estado local de Obsidian y de herramientas
+/.obsidian/workspace.json
+/.claude/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

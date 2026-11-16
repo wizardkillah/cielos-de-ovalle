@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cielos de Ovalle — Observatorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────── */
+:root {
+  --night: #050810;
+  --deep:  #080d1a;
+  --card:  rgba(10,15,32,0.92);
+  --rim:   rgba(255,255,255,0.07);
+  --gold:  #f0c060;
+  --aqua:  #60d4f0;
+  --rose:  #f06080;
+  --white: #e8f0ff;
+  --muted: rgba(232,240,255,0.45);
+  --r: 14px;
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* ── RESET ───────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; background:var(--night); color:var(--white); font-family:'DM Sans', sans-serif; }
+
+/* ── CANVAS SKY ──────────────────────────────── */
+#sky-canvas {
+  position:fixed; inset:0; width:100%; height:100%;
+  touch-action: none;
+}
+
+/* ── HEADER ──────────────────────────────────── */
+#header {
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  padding: 14px 20px 10px;
+  background: linear-gradient(to bottom, rgba(5,8,16,0.95) 70%, transparent);
+  display: flex; align-items:center; justify-content:space-between;
+  padding-top: max(14px, env(safe-area-inset-top, 14px));
+}
+
+#logo {
+  font-family:'Unbounded', sans-serif;
+  font-size:13px; font-weight:700;
+  letter-spacing:0.04em;
+  color:var(--white);
+  line-height:1;
+}
+#logo span { color:var(--gold); }
+
+#lang-toggle {
+  background: var(--rim);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius:20px;
+  display:flex; overflow:hidden;
+}
+.lang-btn {
+  padding:5px 12px; font-size:11px; font-weight:500;
+  font-family:'DM Sans',sans-serif;
+  cursor:pointer; border:none; background:transparent;
+  color:var(--muted); transition:all 0.2s;
+  letter-spacing:0.05em;
+}
+.lang-btn.active { background:var(--gold); color:#000; font-weight:700; }
+
+/* ── TIME STRIP ──────────────────────────────── */
+#time-strip {
+  position:fixed; top:56px; left:0; right:0; z-index:49;
+  padding: 6px 20px;
+  display:flex; gap:16px; align-items:center;
+  font-size:11px; color:var(--muted);
+  font-family:'DM Sans',sans-serif;
+  background: linear-gradient(to bottom, rgba(5,8,16,0.7), transparent);
+}
+#time-strip .val { color:var(--white); font-weight:500; }
+#time-strip .sep { opacity:0.2; }
+
+/* ── BOTTOM PANEL ────────────────────────────── */
+#bottom-panel {
+  position:fixed; bottom:0; left:0; right:0; z-index:50;
+  padding-bottom: max(20px, var(--safe-bottom));
+}
+
+/* CTA BUTTON */
+#cta-wrap {
+  padding: 0 20px 14px;
+  display:flex; gap:10px;
+}
+
+#btn-what {
+  flex:1;
+  background: var(--gold);
+  border:none; border-radius:16px;
+  padding: 18px 24px;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  cursor:pointer;
+  font-family:'Unbounded',sans-serif;
+  font-size:14px; font-weight:700;
+  color:#000;
+  letter-spacing:0.02em;
+  box-shadow: 0 0 40px rgba(240,192,96,0.35), 0 4px 20px rgba(0,0,0,0.4);
+  transition: all 0.18s cubic-bezier(.34,1.56,.64,1);
+  position:relative; overflow:hidden;
+}
+#btn-what:active { transform:scale(0.96); }
+#btn-what::after {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.25), transparent 70%);
+}
+#btn-what .icon { font-size:20px; }
+
+#btn-map {
+  width:58px; height:58px; border-radius:16px;
+  background:var(--card); border:1px solid var(--rim);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:22px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  transition:all 0.15s;
+}
+#btn-map:active { transform:scale(0.93); background:rgba(96,212,240,0.15); }
+
+/* ── OBJECT CARD ─────────────────────────────── */
+#obj-card {
+  margin:0 20px 8px;
+  background:var(--card);
+  border:1px solid var(--rim);
+  border-radius: var(--r);
+  overflow:hidden;
+  backdrop-filter:blur(20px);
+  transform: translateY(110%);
+  transition: transform 0.42s cubic-bezier(.34,1.2,.64,1);
+  box-shadow:0 -4px 40px rgba(0,0,0,0.5);
+}
+#obj-card.visible { transform:translateY(0); }
+
+#card-header {
+  padding:16px 18px 12px;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+}
+
+#card-type-badge {
+  font-size:10px; font-weight:600; letter-spacing:0.1em;
+  text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(240,192,96,0.15);
+  color:var(--gold); border:1px solid rgba(240,192,96,0.3);
+  white-space:nowrap; flex-shrink:0; margin-top:2px;
+}
+
+#card-name {
+  font-family:'Unbounded',sans-serif;
+  font-size:22px; font-weight:700;
+  color:var(--white); line-height:1.1;
+  flex:1;
+}
+#card-name-sub {
+  font-size:12px; color:var(--muted); margin-top:3px;
+  font-style:italic;
+}
+
+#card-body { padding:0 18px 16px; }
+
+#card-desc {
+  font-size:14px; line-height:1.65;
+  color:rgba(232,240,255,0.8);
+  margin-bottom:14px;
+}
+
+#card-facts {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.fact-chip {
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--rim);
+  border-radius:10px; padding:9px 11px;
+}
+.fact-chip .fk { font-size:10px; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:3px; }
+.fact-chip .fv { font-size:13px; font-weight:500; color:var(--white); }
+.fact-chip .fv.gold { color:var(--gold); }
+.fact-chip .fv.aqua { color:var(--aqua); }
+.fact-chip .fv.rose { color:var(--rose); }
+
+#card-coords {
+  margin-top:10px;
+  background:rgba(96,212,240,0.06);
+  border:1px solid rgba(96,212,240,0.15);
+  border-radius:10px; padding:10px 12px;
+  display:flex; gap:16px;
+}
+.coord-item { font-size:11px; }
+.coord-item .ck { color:var(--muted); margin-bottom:2px; }
+.coord-item .cv { font-family:'DM Sans',monospace; color:var(--aqua); font-weight:500; }
+
+#card-close {
+  position:absolute; top:14px; right:14px;
+  width:28px; height:28px; border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:none; cursor:pointer; font-size:14px; color:var(--muted);
+  display:flex; align-items:center; justify-content:center;
+}
+#obj-card { position:relative; }
+
+/* ── VISIBLE NOW STRIP ───────────────────────── */
+#visible-strip {
+  position:fixed;
+  top:90px; left:0; right:0; z-index:48;
+  overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none; -ms-overflow-style:none;
+  padding:0 20px;
+  display:flex; gap:8px;
+  -webkit-overflow-scrolling:touch;
+}
+#visible-strip::-webkit-scrollbar { display:none; }
+
+.obj-pill {
+  flex-shrink:0;
+  background:rgba(10,15,32,0.8);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px; padding:6px 13px;
+  font-size:11px; font-weight:500;
+  cursor:pointer; white-space:nowrap;
+  backdrop-filter:blur(10px);
+  transition:all 0.15s; display:flex; align-items:center; gap:5px;
+  color:var(--muted);
+}
+.obj-pill:active { transform:scale(0.93); }
+.obj-pill.bright { border-color:rgba(240,192,96,0.4); color:var(--gold); }
+.obj-pill.planet { border-color:rgba(96,212,240,0.35); color:var(--aqua); }
+.obj-pill.special { border-color:rgba(240,96,128,0.35); color:var(--rose); }
+.obj-pill .dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+/* ── COMPASS ─────────────────────────────────── */
+#compass {
+  position:fixed; bottom:145px; right:18px; z-index:48;
+  width:52px; height:52px;
+  background:rgba(5,8,16,0.7);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:50%; backdrop-filter:blur(10px);
+  display:flex; align-items:center; justify-content:center;
+}
+#compass svg { width:36px; height:36px; }
+
+/* ── COORDS BAR ──────────────────────────────── */
+#coords-bar {
+  position:fixed; bottom:145px; left:18px; z-index:48;
+  background:rgba(5,8,16,0.75); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:8px 11px;
+  font-size:10px; color:var(--muted);
+  backdrop-filter:blur(10px);
+  line-height:1.9;
+}
+#coords-bar .cv2 { color:var(--aqua); font-weight:500; }
+
+/* ── PULSE ANIMATION ─────────────────────────── */
+@keyframes ping {
+  0%   { transform:scale(1); opacity:0.8; }
+  70%  { transform:scale(2.2); opacity:0; }
+  100% { transform:scale(2.2); opacity:0; }
+}
+.pulse-ring {
+  position:absolute;
+  border-radius:50%;
+  border:1px solid var(--gold);
+  animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite;
+  pointer-events:none;
+}
+
+/* ── SCAN LINE ───────────────────────────────── */
+#scan {
+  position:fixed; inset:0; pointer-events:none; z-index:2;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.012) 3px,rgba(255,255,255,0.012) 4px);
+}
+
+/* ── TOAST ───────────────────────────────────── */
+#toast {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(10,15,32,0.95); border:1px solid var(--gold);
+  border-radius:12px; padding:16px 24px;
+  font-family:'Unbounded',sans-serif; font-size:13px; color:var(--gold);
+  z-index:200; text-align:center; letter-spacing:0.04em;
+  opacity:0; transition:opacity 0.3s; pointer-events:none;
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 40px rgba(240,192,96,0.2);
+}
+#toast.show { opacity:1; }
+
+/* ── INFO OVERLAY ────────────────────────────── */
+#info-overlay {
+  position:fixed; inset:0; z-index:100;
+  background:rgba(5,8,16,0.96);
+  backdrop-filter:blur(20px);
+  display:flex; flex-direction:column;
+  transform:translateY(100%);
+  transition:transform 0.4s cubic-bezier(.34,1.1,.64,1);
+  overflow-y:auto;
+}
+#info-overlay.open { transform:translateY(0); }
+#info-overlay-header {
+  padding:20px 20px 0;
+  padding-top:max(20px,env(safe-area-inset-top,20px));
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+}
+#info-overlay-title {
+  font-family:'Unbounded',sans-serif; font-size:16px; font-weight:700;
+}
+#close-overlay {
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.07);border:1px solid var(--rim);
+  cursor:pointer;font-size:16px;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;
+}
+#sky-map-canvas { display:block; width:100%; touch-action:none; }
+</style>
+</head>
+<body>
+
+<canvas id="sky-canvas"></canvas>
+<div id="scan"></div>
+
+<!-- HEADER -->
+<div id="header">
+  <div>
+    <div id="logo">CIELOS <span>OVALLE</span></div>
+  </div>
+  <div id="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('es')">ES</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+</div>
+
+<!-- TIME -->
+<div id="time-strip">
+  <span id="ts-time">—</span>
+  <span class="sep">|</span>
+  <span data-t="lst">TSL</span>: <span class="val" id="ts-lst">—</span>
+  <span class="sep">|</span>
+  <span data-t="lat">LAT</span> <span class="val">-30.6°</span>
+</div>
+
+<!-- VISIBLE NOW PILLS -->
+<div id="visible-strip"></div>
+
+<!-- COMPASS -->
+<div id="compass">
+  <svg viewBox="0 0 36 36">
+    <circle cx="18" cy="18" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <text x="18" y="7" text-anchor="middle" fill="#f0c060" font-size="6" font-family="DM Sans" font-weight="600">N</text>
+    <text x="18" y="33" text-anchor="middle" fill="rgba(232,240,255,0.5)" font-size="5" font-family="DM Sans">S</text>
+    <text x="32" y="20" text-anchor="middle" fill="rgba(232,240,255,0.5)" font-size="5" font-family="DM Sans">E</text>
+    <text x="4" y="20" text-anchor="middle" fill="rgba(232,240,255,0.5)" font-size="5" font-family="DM Sans">O</text>
+    <line x1="18" y1="10" x2="18" y2="26" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+    <line x1="10" y1="18" x2="26" y2="18" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+    <circle cx="18" cy="18" r="2" fill="#f0c060"/>
+  </svg>
+</div>
+
+<!-- COORDS -->
+<div id="coords-bar">
+  <div><span data-t="az">Az</span>: <span class="cv2" id="cb-az">—</span></div>
+  <div><span data-t="alt">Alt</span>: <span class="cv2" id="cb-alt">—</span></div>
+  <div>AR: <span class="cv2" id="cb-ra">—</span></div>
+  <div>Dec: <span class="cv2" id="cb-dec">—</span></div>
+</div>
+
+<!-- OBJECT CARD -->
+<div id="obj-card">
+  <button id="card-close" onclick="closeCard()">✕</button>
+  <div id="card-header">
+    <div>
+      <div id="card-name">—</div>
+      <div id="card-name-sub"></div>
+    </div>
+    <div id="card-type-badge">—</div>
+  </div>
+  <div id="card-body">
+    <div id="card-desc"></div>
+    <div id="card-facts"></div>
+    <div id="card-coords">
+      <div class="coord-item"><div class="ck">Azimut</div><div class="cv" id="cc-az">—</div></div>
+      <div class="coord-item"><div class="ck">Altitud</div><div class="cv" id="cc-alt">—</div></div>
+      <div class="coord-item"><div class="ck">Asc. Recta</div><div class="cv" id="cc-ra">—</div></div>
+      <div class="coord-item"><div class="ck">Declinación</div><div class="cv" id="cc-dec">—</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BUTTONS -->
+<div id="bottom-panel">
+  <div id="cta-wrap">
+    <button id="btn-what" onclick="whatAmILooking()">
+      <span class="icon">🔭</span>
+      <span id="btn-txt">¿Qué estoy mirando?</span>
+    </button>
+    <button id="btn-map" onclick="openMap()" title="Mapa del cielo">🗺</button>
+  </div>
+</div>
+
+<!-- MAP OVERLAY -->
+<div id="info-overlay">
+  <div id="info-overlay-header">
+    <div id="info-overlay-title" data-t="skymap">Mapa del Cielo</div>
+    <button id="close-overlay" onclick="closeMap()">✕</button>
+  </div>
+  <canvas id="sky-map-canvas"></canvas>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════
+// TRANSLATIONS
+// ════════════════════════════════════════════════
+var LANG = 'es';
+var T = {
+  es: {
+    lst:'TSL', az:'Azimut', alt:'Altitud', skymap:'Mapa del Cielo',
+    btnWhat:'¿Qué estoy mirando?',
+    lat:'Lat',
+    typesStar:'Estrella', typePlanet:'Planeta', typeMoon:'Luna',
+    typeNebula:'Nebulosa', typeCluster:'Cúmulo', typeGalaxy:'Galaxia',
+    typeSun:'Nuestra Estrella', typeBH:'Agujero Negro',
+    altLabel:'Altitud', distLabel:'Distancia', magLabel:'Magnitud',
+    periodLabel:'Período', moonsLabel:'Lunas', tempLabel:'Temperatura',
+    visibleNow:'Visible ahora',
+    notFound:'Apunta hacia el cielo y toca el botón',
+    aboveHorizon:'sobre el horizonte',
+    belowHorizon:'bajo el horizonte',
+    coordsTitle:'Coordenadas en este momento',
+    funFact:'¿Sabías que…'
+  },
+  en: {
+    lst:'LST', az:'Azimuth', alt:'Altitude', skymap:'Sky Map',
+    btnWhat:'What am I looking at?',
+    lat:'Lat',
+    typesStar:'Star', typePlanet:'Planet', typeMoon:'Moon',
+    typeNebula:'Nebula', typeCluster:'Cluster', typeGalaxy:'Galaxy',
+    typeSun:'Our Star', typeBH:'Black Hole',
+    altLabel:'Altitude', distLabel:'Distance', magLabel:'Magnitude',
+    periodLabel:'Period', moonsLabel:'Moons', tempLabel:'Temperature',
+    visibleNow:'Visible now',
+    notFound:'Point at the sky and tap the button',
+    aboveHorizon:'above horizon',
+    belowHorizon:'below horizon',
+    coordsTitle:'Current coordinates',
+    funFact:'Did you know…'
+  }
+};
+
+function t(key) { return (T[LANG]||T['es'])[key] || key; }
+
+function setLang(l) {
+  LANG = l;
+  document.querySelectorAll('.lang-btn').forEach(function(b){
+    b.classList.toggle('active', b.textContent.toLowerCase()===l);
+  });
+  document.getElementById('btn-txt').textContent = t('btnWhat');
+  document.querySelectorAll('[data-t]').forEach(function(el){
+    el.textContent = t(el.dataset.t);
+  });
+  if (CURRENT_OBJ) showCard(CURRENT_OBJ);
+  buildPills();
+}
+
+// ════════════════════════════════════════════════
+// ASTRONOMY ENGINE
+// ════════════════════════════════════════════════
+var LAT = -30.6, LON = -71.2;
+var R2D = 180/Math.PI, D2R = Math.PI/180;
+
+function mod360(x){ return ((x%360)+360)%360; }
+function mod24(x){ return ((x%24)+24)%24; }
+
+function getJD(date){
+  var y=date.getUTCFullYear(), m=date.getUTCMonth()+1, d=date.getUTCDate();
+  var h=date.getUTCHours()+date.getUTCMinutes()/60+date.getUTCSeconds()/3600;
+  var A=Math.floor((14-m)/12), Y=y+4800-A, M2=m+12*A-3;
+  return d+Math.floor((153*M2+2)/5)+365*Y+Math.floor(Y/4)-Math.floor(Y/100)+Math.floor(Y/400)-32045+(h-12)/24;
+}
+
+function getLST(jd, lon){
+  var T=(jd-2451545)/36525;
+  var gmst=mod360(280.46061837+360.98564736629*(jd-2451545)+0.000387933*T*T);
+  return mod360(gmst+lon);
+}
+
+function raDecToAzAlt(ra, dec, lst, lat){
+  var ha=mod360(lst-ra*15)*D2R;
+  var decR=dec*D2R, latR=lat*D2R;
+  var sinAlt=Math.sin(decR)*Math.sin(latR)+Math.cos(decR)*Math.cos(latR)*Math.cos(ha);
+  var alt=Math.asin(Math.max(-1,Math.min(1,sinAlt)))*R2D;
+  var cosAz=(Math.sin(decR)-Math.sin(alt*D2R)*Math.sin(latR))/(Math.cos(alt*D2R)*Math.cos(latR));
+  var az=Math.acos(Math.max(-1,Math.min(1,cosAz)))*R2D;
+  if(Math.sin(ha)>0) az=360-az;
+  return {az:mod360(az), alt:alt};
+}
+
+function getSunPos(jd){
+  var T=(jd-2451545)/36525;
+  var L0=mod360(280.46646+36000.76983*T);
+  var M=mod360(357.52911+35999.05029*T)*D2R;
+  var C=(1.914602-0.004817*T)*Math.sin(M)+(0.019993-0.000101*T)*Math.sin(2*M);
+  var lon=mod360(L0+C);
+  var eps=(23.439291111-0.013004167*T)*D2R;
+  var lonR=lon*D2R;
+  var ra=Math.atan2(Math.cos(eps)*Math.sin(lonR),Math.cos(lonR))*R2D/15;
+  var dec=Math.asin(Math.sin(eps)*Math.sin(lonR))*R2D;
+  return {ra:mod24(ra), dec:dec, lon:lon};
+}
+
+function getMoonPos(jd){
+  var T=(jd-2451545)/36525;
+  var D=mod360(297.85036+445267.111480*T)*D2R;
+  var M=mod360(357.52772+35999.050340*T)*D2R;
+  var Mp=mod360(134.96298+477198.867398*T)*D2R;
+  var F=mod360(93.27191+483202.017538*T)*D2R;
+  var lon=218.3165+481267.8813*T
+    +6.288750*Math.sin(Mp)+1.274018*Math.sin(2*D-Mp)
+    +0.658309*Math.sin(2*D)+0.213616*Math.sin(2*Mp)
+    -0.185596*Math.sin(M)-0.114336*Math.sin(2*F);
+  lon=mod360(lon);
+  var lat=5.128189*Math.sin(F)+0.280606*Math.sin(Mp+F)+0.277693*Math.sin(Mp-F);
+  var eps=23.4393*D2R;
+  var lonR=lon*D2R, latR=lat*D2R;
+  var ra=Math.atan2(Math.sin(lonR)*Math.cos(eps)-Math.tan(latR)*Math.sin(eps),Math.cos(lonR))*R2D/15;
+  var dec=Math.asin(Math.sin(latR)*Math.cos(eps)+Math.cos(latR)*Math.sin(eps)*Math.sin(lonR))*R2D;
+  var phase=mod360(lon-getSunPos(jd).lon)/360;
+  return {ra:mod24(ra), dec:dec, phase:phase};
+}
+
+function getPlanetPos(pl, jd){
+  var T=(jd-2451545)/36525;
+  var L=mod360(pl.L0+pl.L1*T);
+  var e=pl.e, w=mod360(pl.w0+(pl.w1||0)*T), O=mod360(pl.O0+(pl.O1||0)*T);
+  var wbar=mod360(O+w);
+  var M=mod360(L-wbar)*D2R;
+  var E=M; for(var i=0;i<8;i++) E=M+e*Math.sin(E);
+  var v=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2));
+  var r=pl.a*(1-e*Math.cos(E));
+  var iR=pl.i*D2R, Or=O*D2R, wr=w*D2R;
+  var u=v+wr;
+  var x=r*(Math.cos(Or)*Math.cos(u)-Math.sin(Or)*Math.sin(u)*Math.cos(iR));
+  var y=r*(Math.sin(Or)*Math.cos(u)+Math.cos(Or)*Math.sin(u)*Math.cos(iR));
+  var z=r*Math.sin(u)*Math.sin(iR);
+  var sun=getSunPos(jd);
+  var earthR=1.0, sunLonR=sun.lon*D2R;
+  var xe=-earthR*Math.cos(sunLonR), ye=-earthR*Math.sin(sunLonR);
+  var dx=x-xe, dy=y-ye, dz=z;
+  var eps=23.4393*D2R;
+  var xeq=dx, yeq=dy*Math.cos(eps)-dz*Math.sin(eps), zeq=dy*Math.sin(eps)+dz*Math.cos(eps);
+  var dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
+  var ra=Math.atan2(yeq,xeq)*R2D/15;
+  var dec=Math.asin(zeq/dist)*R2D;
+  return {ra:mod24(ra), dec:dec, dist:dist};
+}
+
+function moonPhaseName(p, lang){
+  var phases={
+    es:['Luna Nueva','Creciente','Cuarto Creciente','Gibosa Creciente','Luna Llena','Gibosa Menguante','Cuarto Menguante','Menguante'],
+    en:['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent']
+  };
+  var idx=Math.floor(((p+0.0625)%1)*8);
+  return (phases[lang]||phases.es)[idx];
+}
+
+function fRA(ra){
+  var h=Math.floor(ra), m=Math.floor((ra-h)*60), s=Math.floor(((ra-h)*60-m)*60);
+  return h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+}
+function fDec(dec){
+  var sg=dec>=0?'+':'-', d=Math.floor(Math.abs(dec)), m=Math.floor((Math.abs(dec)-d)*60);
+  return sg+String(d).padStart(2,'0')+'° '+String(m).padStart(2,'0')+"'";
+}
+function fAz(a){ return a.toFixed(1)+'°'; }
+function fAlt(a){ return (a>=0?'+':'')+a.toFixed(1)+'°'; }
+
+// ════════════════════════════════════════════════
+// OBJECT DATABASE
+// ════════════════════════════════════════════════
+var PLANETS_DATA = [
+  {id:'mercury',L0:252.251,L1:149474.070,a:0.387,e:0.2056,i:7.005,O0:48.331,O1:-0.1288,w0:29.125,w1:0.2924},
+  {id:'venus',  L0:181.980,L1:58519.213, a:0.723,e:0.0068,i:3.395,O0:76.680,O1:-0.2758,w0:54.891,w1:0.3840},
+  {id:'mars',   L0:355.433,L1:19141.696, a:1.524,e:0.0934,i:1.850,O0:49.558,O1:-0.2926,w0:286.502,w1:0.9223},
+  {id:'jupiter',L0:34.351, L1:3036.301,  a:5.203,e:0.0485,i:1.305,O0:100.464,O1:0.1760,w0:14.331,w1:0.2159},
+  {id:'saturn', L0:50.077, L1:1223.011,  a:9.555,e:0.0555,i:2.485,O0:113.665,O1:-0.2369,w0:93.057,w1:0.5621},
+];
+
+var OBJECTS = [
+  // STARS
+  {id:'sirius',   name:{es:'Sirio',en:'Sirius'},
+   ra:6.7525, dec:-16.716, mag:-1.46, type:'star', color:'#aaddff',
+   desc:{es:'La estrella más brillante de todo el cielo nocturno. Es en realidad un sistema doble a solo 8,6 años luz de nosotros. Su nombre en griego significa "abrasador".',
+         en:'The brightest star in the night sky. It\'s actually a double star system just 8.6 light-years away. Its Greek name means "scorching".'},
+   facts:{es:{dist:'8,6 años luz',mag:'-1,46',type:'Binaria A1V+DA2',temp:'9.940 K'},
+          en:{dist:'8.6 light-years',mag:'-1.46',type:'Binary A1V+DA2',temp:'9,940 K'}},
+   funFact:{es:'Sirio es tan brillante que puede verse durante el crepúsculo. Los egipcios usaban su aparición al amanecer para predecir la crecida del Nilo.',
+            en:'Sirius is so bright it can be seen at twilight. Ancient Egyptians used its dawn rising to predict the Nile flood.'}},
+
+  {id:'canopus',  name:{es:'Canopus',en:'Canopus'},
+   ra:6.3992, dec:-52.696, mag:-0.72, type:'star', color:'#fff8e0',
+   desc:{es:'La segunda estrella más brillante del cielo y la más brillante de la constelación Carina. Es una supergigante blanco-amarilla a 310 años luz.',
+         en:'The second brightest star in the sky and the brightest in the constellation Carina. It\'s a yellow-white supergiant 310 light-years away.'},
+   facts:{es:{dist:'310 años luz',mag:'-0,72',type:'Supergigante F0Ib',temp:'7.400 K'},
+          en:{dist:'310 light-years',mag:'-0.72',type:'Supergiant F0Ib',temp:'7,400 K'}},
+   funFact:{es:'La NASA usa Canopus como estrella de navegación para las sondas espaciales por ser tan brillante y estar lejos del plano de la Vía Láctea.',
+            en:'NASA uses Canopus as a navigation star for space probes because it\'s so bright and far from the Milky Way plane.'}},
+
+  {id:'rigil',    name:{es:'Alpha Centauri',en:'Alpha Centauri'},
+   ra:14.660, dec:-60.835, mag:-0.27, type:'star', color:'#ffee88',
+   desc:{es:'El sistema estelar más cercano al Sol, a solo 4,37 años luz. Está compuesto por tres estrellas. Próxima Centauri, la componente más cercana, es la estrella más próxima a nuestro Sol.',
+         en:'The nearest star system to the Sun, just 4.37 light-years away. It consists of three stars. Proxima Centauri, its nearest component, is the closest star to our Sun.'},
+   facts:{es:{dist:'4,37 años luz',mag:'-0,27',type:'Triple G2V+K1V+M5',temp:'5.790 K'},
+          en:{dist:'4.37 light-years',mag:'-0.27',type:'Triple G2V+K1V+M5',temp:'5,790 K'}},
+   funFact:{es:'Si viajáramos en el vehículo más rápido jamás construido, tardaríamos más de 70.000 años en llegar a Alpha Centauri.',
+            en:'Traveling on the fastest spacecraft ever built, it would take over 70,000 years to reach Alpha Centauri.'}},
+
+  {id:'crux_a',   name:{es:'Acrux — Cruz del Sur',en:'Acrux — Southern Cross'},
+   ra:12.443, dec:-63.099, mag:0.77, type:'star', color:'#c8d8ff',
+   desc:{es:'La estrella más brillante de la Cruz del Sur (Crux), la constelación más pequeña del cielo pero una de las más reconocibles del hemisferio sur. Aparece en la bandera de Chile.',
+         en:'The brightest star in the Southern Cross (Crux), the smallest constellation in the sky but one of the most recognizable in the southern hemisphere. It appears on the Chilean flag.'},
+   facts:{es:{dist:'320 años luz',mag:'0,77',type:'Binaria B0.5IV',temp:'28.000 K'},
+          en:{dist:'320 light-years',mag:'0.77',type:'Binary B0.5IV',temp:'28,000 K'}},
+   funFact:{es:'La Cruz del Sur fue usada durante siglos por navegantes del hemisferio sur para encontrar el sur geográfico, igual que la Estrella Polar en el norte.',
+            en:'The Southern Cross has been used for centuries by southern hemisphere navigators to find geographic south, just like Polaris in the north.'}},
+
+  {id:'antares',  name:{es:'Antares',en:'Antares'},
+   ra:16.490, dec:-26.432, mag:1.09, type:'star', color:'#ff5522',
+   desc:{es:'Una supergigante roja masiva en el corazón de Escorpio. Su nombre significa "rival de Marte" por su color rojizo similar. Si estuviera en el lugar del Sol, su superficie englobaría la órbita de Marte.',
+         en:'A massive red supergiant at the heart of Scorpius. Its name means "rival of Mars" due to its similar reddish color. If placed where our Sun is, its surface would engulf Mars\'s orbit.'},
+   facts:{es:{dist:'550 años luz',mag:'1,09',type:'Supergigante M1Ia',temp:'3.570 K'},
+          en:{dist:'550 light-years',mag:'1.09',type:'Supergiant M1Ia',temp:'3,570 K'}},
+   funFact:{es:'Antares es candidata a convertirse en supernova. Cuando explote, será visible de día durante semanas desde la Tierra, aunque esto podría ocurrir en cualquier momento de los próximos 100.000 años.',
+            en:'Antares is a supernova candidate. When it explodes, it will be visible in daylight for weeks from Earth, though this could happen anytime in the next 100,000 years.'}},
+
+  {id:'betelgeuse',name:{es:'Betelgeuse',en:'Betelgeuse'},
+   ra:5.920, dec:7.407, mag:0.50, type:'star', color:'#ff4400',
+   desc:{es:'Una de las estrellas más grandes conocidas, una supergigante roja en el hombro de Orión. En 2019-2020 se atenuó drásticamente, lo que generó especulación de una inminente supernova.',
+         en:'One of the largest known stars, a red supergiant on Orion\'s shoulder. In 2019-2020 it dramatically dimmed, sparking speculation about an imminent supernova.'},
+   facts:{es:{dist:'700 años luz',mag:'0,5 (variable)',type:'Supergigante M1-2Ia',temp:'3.500 K'},
+          en:{dist:'700 light-years',mag:'0.5 (variable)',type:'Supergiant M1-2Ia',temp:'3,500 K'}},
+   funFact:{es:'Betelgeuse es tan enorme que si la colocáramos en el lugar del Sol, englobaría la órbita de Júpiter. Contiene suficiente materia para hacer 1.500 soles.',
+            en:'Betelgeuse is so enormous that if placed where our Sun is, it would engulf Jupiter\'s orbit. It contains enough matter to make 1,500 suns.'}},
+
+  {id:'vega',     name:{es:'Vega',en:'Vega'},
+   ra:18.616, dec:38.784, mag:0.03, type:'star', color:'#ccddff',
+   desc:{es:'Una de las estrellas más estudiadas del cielo. Fue la primera estrella fotografiada (1850) y la primera con espectro registrado. Dentro de 12.000 años, reemplazará a Polaris como estrella polar.',
+         en:'One of the most studied stars in the sky. It was the first star photographed (1850) and the first to have its spectrum recorded. In 12,000 years it will replace Polaris as the pole star.'},
+   facts:{es:{dist:'25 años luz',mag:'0,03',type:'A0Va',temp:'9.600 K'},
+          en:{dist:'25 light-years',mag:'0.03',type:'A0Va',temp:'9,600 K'}},
+   funFact:{es:'En la película "Contact" (1997), la primera señal extraterrestre detectada provenía de Vega. Los astrónomos han detectado un disco de polvo a su alrededor que podría contener planetas.',
+            en:'In the movie "Contact" (1997), the first alien signal came from Vega. Astronomers have detected a dust disk around it that may contain planets.'}},
+
+  // NEBULAE
+  {id:'eta_car',  name:{es:'Nebulosa de Eta Carinae',en:'Eta Carinae Nebula'},
+   ra:10.750, dec:-59.684, mag:4.3, type:'nebula', color:'#ff8844',
+   desc:{es:'Una de las regiones más espectaculares del cielo austral. Contiene Eta Carinae, una de las estrellas más masivas e inestables conocidas, rodeada por una nebulosa que ella misma expulsó en una erupción masiva en 1843.',
+         en:'One of the most spectacular regions in the southern sky. It contains Eta Carinae, one of the most massive and unstable known stars, surrounded by a nebula it ejected during a massive eruption in 1843.'},
+   facts:{es:{dist:'7.500 años luz',mag:'~4 (variable)',type:'Nebulosa de emisión+LBV',size:'460 años luz'},
+          en:{dist:'7,500 light-years',mag:'~4 (variable)',type:'Emission nebula+LBV',size:'460 light-years'}},
+   funFact:{es:'La estrella central Eta Carinae tiene entre 100 y 150 veces la masa del Sol. Es considerada candidata a hipernova, una explosión más poderosa que cualquier supernova normal.',
+            en:'The central star Eta Carinae has 100-150 times the mass of our Sun. It\'s considered a hypernova candidate, an explosion more powerful than any ordinary supernova.'}},
+
+  {id:'orion_neb',name:{es:'Nebulosa de Orión',en:'Orion Nebula'},
+   ra:5.588, dec:-5.391, mag:4.0, type:'nebula', color:'#ff9966',
+   desc:{es:'A 1.344 años luz, es la nebulosa más cercana al Sol donde se están formando estrellas activamente ahora mismo. Visible a simple vista como la estrella central "borrosa" de la espada de Orión.',
+         en:'At 1,344 light-years, it\'s the nearest nebula to the Sun where stars are actively forming right now. Visible to the naked eye as the fuzzy central "star" of Orion\'s sword.'},
+   facts:{es:{dist:'1.344 años luz',mag:'4,0',type:'Nebulosa de reflexión/emisión',size:'24 años luz'},
+          en:{dist:'1,344 light-years',mag:'4.0',type:'Reflection/emission nebula',size:'24 light-years'}},
+   funFact:{es:'En el interior de la Nebulosa de Orión se están formando estrellas nuevas en este preciso momento, junto con discos protoplanetarios que podrían convertirse en sistemas solares como el nuestro.',
+            en:'Inside the Orion Nebula, new stars are forming right now, along with protoplanetary disks that could become solar systems like our own.'}},
+
+  // CLUSTERS
+  {id:'omega_cen', name:{es:'Omega Centauri',en:'Omega Centauri'},
+   ra:13.446, dec:-47.479, mag:3.9, type:'cluster', color:'#ffeecc',
+   desc:{es:'El cúmulo globular más grande y masivo de la Vía Láctea, con casi 10 millones de estrellas comprimidas en un volumen de 150 años luz de diámetro. Visible a simple vista desde la IV Región.',
+         en:'The largest and most massive globular cluster of the Milky Way, with nearly 10 million stars compressed in a volume 150 light-years across. Visible to the naked eye from the Coquimbo Region.'},
+   facts:{es:{dist:'17.000 años luz',mag:'3,9',type:'Cúmulo globular',size:'150 años luz'},
+          en:{dist:'17,000 light-years',mag:'3.9',type:'Globular cluster',size:'150 light-years'}},
+   funFact:{es:'Omega Centauri es tan masivo que algunos astrónomos creen que podría ser el núcleo de una galaxia enana absorbida por la Vía Láctea hace miles de millones de años.',
+            en:'Omega Centauri is so massive that some astronomers believe it may be the core of a dwarf galaxy swallowed by the Milky Way billions of years ago.'}},
+
+  {id:'pleaides',  name:{es:'Las Pléyades',en:'The Pleiades'},
+   ra:3.783, dec:24.117, mag:1.6, type:'cluster', color:'#bbddff',
+   desc:{es:'El cúmulo de estrellas más famoso del cielo, conocido desde la antigüedad en todas las culturas del mundo. El ojo humano puede ver entre 6 y 7 estrellas, pero el cúmulo contiene más de 1.000.',
+         en:'The most famous star cluster in the sky, known since antiquity across every culture in the world. The human eye can see 6-7 stars, but the cluster contains over 1,000.'},
+   facts:{es:{dist:'444 años luz',mag:'1,6',type:'Cúmulo abierto joven',size:'~50 años luz'},
+          en:{dist:'444 light-years',mag:'1.6',type:'Young open cluster',size:'~50 light-years'}},
+   funFact:{es:'En el pueblo Mapuche se las llama "Ngaupatue" (ojos de los antepasados). En Japón se les dice "Subaru", y una empresa automovilística tomó ese nombre y sus 6 estrellas para su logo.',
+            en:'The Mapuche people call them "Ngaupatue" (eyes of the ancestors). In Japan they are called "Subaru", and a car company took that name and its 6 stars for their logo.'}},
+
+  // GALAXIES
+  {id:'lmc',      name:{es:'Gran Nube de Magallanes',en:'Large Magellanic Cloud'},
+   ra:5.392, dec:-69.756, mag:0.9, type:'galaxy', color:'#99aaff',
+   desc:{es:'Una galaxia irregular satélite de la Vía Láctea, visible a simple vista como una mancha luminosa en el cielo austral. A solo 160.000 años luz, es una de las galaxias más cercanas a la nuestra.',
+         en:'An irregular satellite galaxy of the Milky Way, visible to the naked eye as a bright patch in the southern sky. At just 160,000 light-years, it\'s one of the nearest galaxies to our own.'},
+   facts:{es:{dist:'160.000 años luz',mag:'0,9',type:'Galaxia irregular satélite',size:'14.000 años luz'},
+          en:{dist:'160,000 light-years',mag:'0.9',type:'Irregular satellite galaxy',size:'14,000 light-years'}},
+   funFact:{es:'En 1987, una supernova explotó en la Gran Nube de Magallanes y fue visible a simple vista durante semanas. Fue la supernova más cercana observada en 400 años.',
+            en:'In 1987, a supernova exploded in the Large Magellanic Cloud and was visible to the naked eye for weeks. It was the nearest supernova observed in 400 years.'}},
+
+  {id:'smc',      name:{es:'Pequeña Nube de Magallanes',en:'Small Magellanic Cloud'},
+   ra:0.875, dec:-72.800, mag:2.7, type:'galaxy', color:'#8899ff',
+   desc:{es:'La compañera de la Gran Nube de Magallanes, también visible a simple vista. Ambas orbitan la Vía Láctea juntas y contienen millones de estrellas, nubes de gas y regiones de formación estelar activa.',
+         en:'The companion of the Large Magellanic Cloud, also visible to the naked eye. Both orbit the Milky Way together and contain millions of stars, gas clouds and active star-forming regions.'},
+   facts:{es:{dist:'200.000 años luz',mag:'2,7',type:'Galaxia irregular satélite',size:'7.000 años luz'},
+          en:{dist:'200,000 light-years',mag:'2.7',type:'Irregular satellite galaxy',size:'7,000 light-years'}},
+   funFact:{es:'Los marinos usaban las Nubes de Magallanes como referencias de orientación en el hemisferio sur antes de que existieran instrumentos modernos de navegación.',
+            en:'Sailors used the Magellanic Clouds as orientation references in the southern hemisphere before modern navigation instruments existed.'}},
+];
+
+// ════════════════════════════════════════════════
+// CANVAS SKY RENDERER
+// ════════════════════════════════════════════════
+var canvas = document.getElementById('sky-canvas');
+var ctx = canvas.getContext('2d');
+var viewAz = 180, viewAlt = 45, viewFov = 80;
+var isDrag = false, lastTouch = null;
+var currentJD = 0, currentLST = 0;
+var CURRENT_OBJ = null;
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function project(az, alt){
+  var W=canvas.width, H=canvas.height;
+  var scale = Math.min(W,H)/2 * (90/viewFov);
+  var azR=az*D2R, altR=alt*D2R, vAzR=viewAz*D2R, vAltR=viewAlt*D2R;
+  var cosDist=Math.sin(altR)*Math.sin(vAltR)+Math.cos(altR)*Math.cos(vAltR)*Math.cos(azR-vAzR);
+  if(cosDist<-0.1) return null;
+  var sinDist=Math.sqrt(Math.max(0,1-cosDist*cosDist));
+  var projR=sinDist===0?0:scale*sinDist/(1+cosDist);
+  var dAz=azR-vAzR;
+  var py2=Math.cos(altR)*Math.sin(dAz);
+  var px2=Math.cos(vAltR)*Math.sin(altR)-Math.sin(vAltR)*Math.cos(altR)*Math.cos(dAz);
+  var ang=Math.atan2(py2,px2);
+  return {x:W/2+projR*Math.sin(ang), y:H/2-projR*Math.cos(ang)};
+}
+
+function starSize(mag){
+  if(mag<=-1) return 5; if(mag<=0) return 4.2; if(mag<=1) return 3.5;
+  if(mag<=2)  return 2.8; if(mag<=3) return 2.2; if(mag<=4) return 1.6;
+  return 1.0;
+}
+
+function starColorCSS(type){
+  if(type==='star'){return '#e8f4ff';}
+  if(type==='nebula'){return '#ff9966';}
+  if(type==='cluster'){return '#ffe0aa';}
+  if(type==='galaxy'){return '#aabbff';}
+  return '#ffffff';
+}
+
+function drawMW(lst){
+  var poleRA=12.8667*15*D2R, poleDec=27.4*D2R, galAngle=123*D2R;
+  ctx.save();
+  for(var l=0;l<360;l+=5){
+    var lR=l*D2R;
+    var sinDec=Math.sin(poleDec)*Math.sin(0)+Math.cos(poleDec)*Math.cos(0)*Math.sin(lR-galAngle);
+    var dec2=Math.asin(Math.max(-1,Math.min(1,sinDec)));
+    var cosRA2=Math.cos(0)*Math.cos(lR-galAngle);
+    var sinRA2=Math.sin(0)*Math.cos(poleDec)-Math.cos(0)*Math.sin(poleDec)*Math.sin(lR-galAngle);
+    var ra2=mod24((Math.atan2(cosRA2,sinRA2)+poleRA)*R2D/15);
+    var pos=raDecToAzAlt(ra2,dec2*R2D,lst,LAT);
+    if(pos.alt<-8) continue;
+    var px=project(pos.az,pos.alt); if(!px) continue;
+    var core=(l>250&&l<360)||l<50;
+    var w=core?32:14, alpha=core?0.055:0.025;
+    var g=ctx.createRadialGradient(px.x,px.y,0,px.x,px.y,w*(80/viewFov));
+    g.addColorStop(0,'rgba(200,210,255,'+alpha+')');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(px.x,px.y,w*(80/viewFov),0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawHorizon(){
+  ctx.save();
+  ctx.beginPath(); var first=true;
+  for(var az2=0;az2<=361;az2+=3){
+    var p=project(az2%360,0); if(!p){first=true;continue;}
+    if(first){ctx.moveTo(p.x,p.y);first=false;}else ctx.lineTo(p.x,p.y);
+  }
+  ctx.closePath();
+  ctx.fillStyle='rgba(5,12,5,0.6)'; ctx.fill();
+  ctx.beginPath(); first=true;
+  for(var az3=0;az3<=361;az3+=2){
+    var p2=project(az3%360,0); if(!p2){first=true;continue;}
+    if(first){ctx.moveTo(p2.x,p2.y);first=false;}else ctx.lineTo(p2.x,p2.y);
+  }
+  ctx.strokeStyle='rgba(80,200,120,0.4)'; ctx.lineWidth=1.5; ctx.setLineDash([6,12]);
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+}
+
+function drawCardinals(){
+  var dirs=[{az:0,l:'N'},{az:90,l:'E'},{az:180,l:'S'},{az:270,l:'O'}];
+  ctx.font='bold 13px Unbounded,sans-serif';
+  dirs.forEach(function(d){
+    var p=project(d.az,1); if(!p) return;
+    ctx.fillStyle='rgba(80,200,120,0.7)'; ctx.textAlign='center';
+    ctx.fillText(d.l,p.x,p.y);
+  });
+  ctx.textAlign='left';
+}
+
+function drawObjects(lst){
+  // Planets
+  var jd=currentJD;
+  var planetVisuals=[
+    {name:{es:'Mercurio',en:'Mercury'},data:PLANETS_DATA[0],color:'#aaaaaa',mag:0},
+    {name:{es:'Venus',en:'Venus'},    data:PLANETS_DATA[1],color:'#ffee88',mag:-4},
+    {name:{es:'Marte',en:'Mars'},     data:PLANETS_DATA[2],color:'#ff5533',mag:0},
+    {name:{es:'Júpiter',en:'Jupiter'},data:PLANETS_DATA[3],color:'#ddaa77',mag:-2},
+    {name:{es:'Saturno',en:'Saturn'}, data:PLANETS_DATA[4],color:'#eecc99',mag:0.5},
+  ];
+
+  planetVisuals.forEach(function(pl){
+    var pos2=getPlanetPos(pl.data,jd);
+    var hor=raDecToAzAlt(pos2.ra,pos2.dec,lst,LAT);
+    if(hor.alt<-5) return;
+    var p=project(hor.az,hor.alt); if(!p) return;
+    var sz=Math.max(3,5-pl.mag*0.5);
+    // Glow
+    var g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,sz*3.5);
+    g.addColorStop(0,pl.color+'99'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,sz*3.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=pl.color; ctx.beginPath(); ctx.arc(p.x,p.y,sz,0,Math.PI*2); ctx.fill();
+    ctx.font='11px DM Sans,sans-serif'; ctx.fillStyle='rgba(232,240,255,0.75)';
+    ctx.fillText(pl.name[LANG],p.x+sz+4,p.y-2);
+  });
+
+  // Stars & deep sky
+  OBJECTS.forEach(function(obj){
+    var hor2=raDecToAzAlt(obj.ra,obj.dec,lst,LAT);
+    if(hor2.alt<-3) return;
+    var p=project(hor2.az,hor2.alt); if(!p) return;
+    var sz2=obj.type==='galaxy'||obj.type==='nebula'||obj.type==='cluster' ? 4 : starSize(obj.mag);
+    var col=obj.color||starColorCSS(obj.type);
+    var isSel=CURRENT_OBJ&&CURRENT_OBJ.id===obj.id;
+
+    // Selection ring
+    if(isSel){
+      ctx.strokeStyle='rgba(240,192,96,0.9)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(p.x,p.y,sz2+6,0,Math.PI*2); ctx.stroke();
+      ctx.strokeStyle='rgba(240,192,96,0.4)'; ctx.lineWidth=0.8;
+      ctx.beginPath(); ctx.moveTo(p.x-14,p.y); ctx.lineTo(p.x+14,p.y);
+      ctx.moveTo(p.x,p.y-14); ctx.lineTo(p.x,p.y+14); ctx.stroke();
+      // Pulse dot
+      ctx.fillStyle='rgba(240,192,96,0.15)'; ctx.beginPath(); ctx.arc(p.x,p.y,sz2+12,0,Math.PI*2); ctx.fill();
+    }
+
+    // Glow for bright stars
+    if(obj.mag<2){
+      var g2=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,sz2*5);
+      g2.addColorStop(0,col+'50'); g2.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(p.x,p.y,sz2*5,0,Math.PI*2); ctx.fill();
+    }
+
+    // Deep sky: fuzzy blob
+    if(obj.type==='nebula'||obj.type==='galaxy'||obj.type==='cluster'){
+      var g3=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,sz2*3);
+      g3.addColorStop(0,col+'60'); g3.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g3; ctx.beginPath(); ctx.arc(p.x,p.y,sz2*3,0,Math.PI*2); ctx.fill();
+    }
+
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(p.x,p.y,sz2,0,Math.PI*2); ctx.fill();
+
+    // Label for bright/selected
+    if(obj.mag<1.5||isSel){
+      ctx.font=(isSel?'bold ':'')+' 10px DM Sans,sans-serif';
+      ctx.fillStyle=isSel?'rgba(240,192,96,0.95)':'rgba(232,240,255,0.55)';
+      ctx.fillText(obj.name[LANG],p.x+sz2+4,p.y-2);
+    }
+  });
+
+  // Sun
+  var sun=getSunPos(jd);
+  var sunHor=raDecToAzAlt(sun.ra,sun.dec,lst,LAT);
+  if(sunHor.alt>-18){
+    var alpha=Math.min(1,Math.max(0,(sunHor.alt+18)/18));
+    if(sunHor.alt>0){
+      var p=project(sunHor.az,sunHor.alt);
+      if(p){
+        for(var gi=3;gi>=0;gi--){
+          var g4=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,12+gi*10);
+          g4.addColorStop(0,'rgba(255,200,50,'+(0.15-gi*0.03)+')'); g4.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.fillStyle=g4; ctx.beginPath(); ctx.arc(p.x,p.y,12+gi*10,0,Math.PI*2); ctx.fill();
+        }
+        var sg=ctx.createRadialGradient(p.x-1,p.y-1,0,p.x,p.y,9);
+        sg.addColorStop(0,'#ffffcc'); sg.addColorStop(0.6,'#ffcc00'); sg.addColorStop(1,'#ff8800');
+        ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(p.x,p.y,9,0,Math.PI*2); ctx.fill();
+      }
+    }
+    // Twilight tint
+    if(sunHor.alt<10){
+      var tw=ctx.createLinearGradient(0,canvas.height*0.3,0,canvas.height);
+      tw.addColorStop(0,'transparent');
+      tw.addColorStop(1,'rgba('+(50+30*alpha)+','+(20+10*alpha)+',5,'+alpha*0.3+')');
+      ctx.fillStyle=tw; ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+  }
+
+  // Moon
+  var moon=getMoonPos(jd);
+  var moonHor=raDecToAzAlt(moon.ra,moon.dec,lst,LAT);
+  if(moonHor.alt>0){
+    var mp=project(moonHor.az,moonHor.alt);
+    if(mp){
+      var mg=ctx.createRadialGradient(mp.x,mp.y,0,mp.x,mp.y,10);
+      mg.addColorStop(0,'rgba(220,230,255,0.2)'); mg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=mg; ctx.beginPath(); ctx.arc(mp.x,mp.y,10,0,Math.PI*2); ctx.fill();
+      drawMoonShape(mp.x,mp.y,7,moon.phase);
+      ctx.font='10px DM Sans,sans-serif'; ctx.fillStyle='rgba(200,216,255,0.7)';
+      ctx.fillText(LANG==='es'?'Luna':'Moon',mp.x+9,mp.y-2);
+    }
+  }
+}
+
+function drawMoonShape(x,y,r,phase){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle='#d0daee'; ctx.fill();
+  var p2=((phase*4)%4);
+  ctx.globalCompositeOperation='source-atop';
+  ctx.fillStyle='#050810';
+  ctx.beginPath();
+  if(p2<1){
+    ctx.arc(x,y,r,-Math.PI/2,Math.PI/2);
+    ctx.ellipse(x,y,r*(1-p2*2),r,0,-Math.PI/2,Math.PI/2,true);
+  } else if(p2<2){
+    ctx.arc(x,y,r,-Math.PI/2,Math.PI/2,true);
+    ctx.ellipse(x,y,r*(p2*2-3),r,0,-Math.PI/2,Math.PI/2);
+  } else if(p2<3){
+    ctx.arc(x,y,r,Math.PI/2,-Math.PI/2);
+    ctx.ellipse(x,y,r*((p2-2)*2-1),r,0,Math.PI/2,-Math.PI/2,true);
+  } else {
+    ctx.arc(x,y,r,Math.PI/2,-Math.PI/2,true);
+    ctx.ellipse(x,y,r*(7-p2*2),r,0,Math.PI/2,-Math.PI/2);
+  }
+  ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+  ctx.restore();
+}
+
+function render(){
+  if(!canvas.width) resize();
+  var W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  var now=new Date(); currentJD=getJD(now); currentLST=getLST(currentJD,LON);
+
+  // Background
+  var bg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+  bg.addColorStop(0,'#070b18'); bg.addColorStop(1,'#020408');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  drawMW(currentLST);
+  drawHorizon();
+  drawObjects(currentLST);
+  drawCardinals();
+
+  // HUD updates
+  var utc=now.toUTCString().split(' ')[4];
+  document.getElementById('ts-time').textContent=utc;
+  var h2=Math.floor(currentLST/15), m2=Math.floor((currentLST/15-h2)*60);
+  document.getElementById('ts-lst').textContent=String(h2).padStart(2,'0')+'h'+String(m2).padStart(2,'0')+'m';
+
+  requestAnimationFrame(render);
+}
+
+// ════════════════════════════════════════════════
+// WHAT AM I LOOKING AT
+// ════════════════════════════════════════════════
+function whatAmILooking(){
+  // Find center of view → closest object
+  var bestObj=null, bestDist=5;
+  var centerAz=viewAz, centerAlt=viewAlt;
+  var jd=currentJD, lst=currentLST;
+
+  OBJECTS.forEach(function(obj){
+    var hor=raDecToAzAlt(obj.ra,obj.dec,lst,LAT);
+    if(hor.alt<0) return;
+    var dAz=Math.abs(hor.az-centerAz); if(dAz>180) dAz=360-dAz;
+    var d=Math.sqrt(dAz*dAz+(hor.alt-centerAlt)*(hor.alt-centerAlt));
+    if(d<bestDist){bestDist=d;bestObj={type:'deep',data:obj,hor:hor};}
+  });
+
+  // Check planets
+  var planetVisuals2=[
+    {id:'sun_obj', name:{es:'Sol',en:'Sun'}, type:'sun', mag:-26.7,
+     getRa:function(jd){return getSunPos(jd).ra;},
+     getDec:function(jd){return getSunPos(jd).dec;},
+     desc:{es:'Nuestra estrella, el Sol. Una enana amarilla de tipo G2V a 150 millones de km de la Tierra. Tiene 4.600 millones de años y le quedan otros 5.000 millones antes de convertirse en gigante roja.',
+           en:'Our star, the Sun. A G2V yellow dwarf 150 million km from Earth. It is 4.6 billion years old with another 5 billion years before becoming a red giant.'},
+     facts:{es:{dist:'150 millones km',mag:'-26,7',type:'Enana amarilla G2V',temp:'5.778 K'},
+            en:{dist:'150 million km',mag:'-26.7',type:'Yellow dwarf G2V',temp:'5,778 K'}},
+     funFact:{es:'El Sol contiene el 99,86% de toda la masa del Sistema Solar. Un millón de Tierras cabrían en su interior.',
+              en:'The Sun contains 99.86% of all the mass in the Solar System. One million Earths would fit inside it.'}},
+    {id:'moon_obj',name:{es:'Luna',en:'Moon'}, type:'moon', mag:-12.7,
+     getRa:function(jd){return getMoonPos(jd).ra;},
+     getDec:function(jd){return getMoonPos(jd).dec;},
+     desc:{es:'Nuestro único satélite natural. Se formó hace 4.500 millones de años cuando un objeto del tamaño de Marte chocó con la Tierra primitiva. Sus fases completas duran 29,5 días.',
+           en:'Our only natural satellite. It formed 4.5 billion years ago when a Mars-sized object collided with early Earth. Its complete phases last 29.5 days.'},
+     facts:{es:{dist:'384.400 km',mag:'-12,7 (llena)',type:'Satélite natural',size:'3.474 km diámetro'},
+            en:{dist:'384,400 km',mag:'-12.7 (full)',type:'Natural satellite',size:'3,474 km diameter'}},
+     funFact:{es:'La Luna se aleja de la Tierra a 3,8 cm por año. Hace 4.000 millones de años estaba 10 veces más cerca y las mareas eran colosales.',
+              en:'The Moon moves away from Earth at 3.8 cm per year. 4 billion years ago it was 10 times closer and the tides were colossal.'}},
+  ];
+  var plObjs=[
+    {id:'mercury',name:{es:'Mercurio',en:'Mercury'},type:'planet',
+     desc:{es:'El planeta más pequeño y el más cercano al Sol. Un año en Mercurio dura solo 88 días terrestres, pero un día dura 59 días. Sus cráteres recuerdan a los de nuestra Luna.',
+           en:'The smallest planet and the closest to the Sun. A year on Mercury lasts only 88 Earth days, but a day lasts 59 days. Its craters resemble those of our Moon.'},
+     facts:{es:{dist:'varia',mag:'varia',type:'Planeta rocoso',per:'88 días'},
+            en:{dist:'varies',mag:'varies',type:'Rocky planet',per:'88 days'}},
+     funFact:{es:'A pesar de ser el más cercano al Sol, Mercurio NO es el más caliente. Venus es más caliente gracias a su denso efecto invernadero.',
+              en:'Despite being closest to the Sun, Mercury is NOT the hottest planet. Venus is hotter due to its dense greenhouse effect.'},
+     pdata:PLANETS_DATA[0]},
+    {id:'venus',name:{es:'Venus',en:'Venus'},type:'planet',
+     desc:{es:'El planeta más brillante del cielo nocturno, visible incluso de día. Su atmósfera densa de CO₂ crea un efecto invernadero que lleva la temperatura a 465°C, más caliente que Mercurio.',
+           en:'The brightest planet in the night sky, visible even in daylight. Its dense CO₂ atmosphere creates a greenhouse effect that pushes temperatures to 465°C, hotter than Mercury.'},
+     facts:{es:{dist:'varia',mag:'hasta -4,9',type:'Planeta rocoso',per:'225 días'},
+            en:{dist:'varies',mag:'up to -4.9',type:'Rocky planet',per:'225 days'}},
+     funFact:{es:'Un día en Venus dura más que un año venusiano. Además, rota en sentido contrario a la mayoría de planetas: si estuvieras en Venus, el Sol saldría por el oeste.',
+              en:'A day on Venus lasts longer than a Venusian year. Also, it rotates in the opposite direction: if you were on Venus, the Sun would rise in the west.'},
+     pdata:PLANETS_DATA[1]},
+    {id:'mars',name:{es:'Marte',en:'Mars'},type:'planet',
+     desc:{es:'El planeta rojo, hogar del volcán más alto del Sistema Solar (Olimpo Mons, 22 km) y el cañón más largo (Valles Marineris, 4.000 km). Actualmente hay varios robots explorándolo.',
+           en:'The red planet, home to the tallest volcano in the Solar System (Olympus Mons, 22 km) and the longest canyon (Valles Marineris, 4,000 km). Several robots are currently exploring it.'},
+     facts:{es:{dist:'varia',mag:'hasta -2,9',type:'Planeta rocoso',per:'687 días'},
+            en:{dist:'varies',mag:'up to -2.9',type:'Rocky planet',per:'687 days'}},
+     funFact:{es:'El color rojo de Marte viene del óxido de hierro (herrumbre) en su superficie. Es básicamente un planeta oxidado.',
+              en:'Mars\'s red color comes from iron oxide (rust) on its surface. It\'s basically a rusted planet.'},
+     pdata:PLANETS_DATA[2]},
+    {id:'jupiter',name:{es:'Júpiter',en:'Jupiter'},type:'planet',
+     desc:{es:'El gigante gaseoso más grande del Sistema Solar. Su Gran Mancha Roja es una tormenta que lleva al menos 350 años activa. Tiene 95 lunas conocidas, incluyendo Europa que podría tener océanos bajo su hielo.',
+           en:'The largest gas giant in the Solar System. Its Great Red Spot is a storm that has been active for at least 350 years. It has 95 known moons, including Europa which may have oceans under its ice.'},
+     facts:{es:{dist:'varia',mag:'hasta -2,9',type:'Gigante gaseoso',per:'12 años'},
+            en:{dist:'varies',mag:'up to -2.9',type:'Gas giant',per:'12 years'}},
+     funFact:{es:'Júpiter actúa como "escudo" gravitacional de la Tierra, desviando muchos asteroides y cometas que de otro modo nos alcanzarían.',
+              en:'Jupiter acts as Earth\'s gravitational "shield", deflecting many asteroids and comets that would otherwise reach us.'},
+     pdata:PLANETS_DATA[3]},
+    {id:'saturn',name:{es:'Saturno',en:'Saturn'},type:'planet',
+     desc:{es:'El planeta de los anillos. Sus anillos están compuestos de hielo y roca, y tienen solo 10-100 metros de grosor aunque se extienden por 280.000 km. Es menos denso que el agua.',
+           en:'The ringed planet. Its rings are made of ice and rock, are only 10-100 meters thick yet extend 280,000 km. It is less dense than water.'},
+     facts:{es:{dist:'varia',mag:'hasta -0,5',type:'Gigante gaseoso',per:'29 años'},
+            en:{dist:'varies',mag:'up to -0.5',type:'Gas giant',per:'29 years'}},
+     funFact:{es:'Los anillos de Saturno son temporales: en unos 100 millones de años habrán desaparecido, atraídos por la gravedad del planeta.',
+              en:'Saturn\'s rings are temporary: in about 100 million years they will have disappeared, pulled in by the planet\'s gravity.'},
+     pdata:PLANETS_DATA[4]},
+  ];
+
+  // Check special bodies
+  planetVisuals2.concat(plObjs).forEach(function(pl){
+    var ra2,dec2;
+    if(pl.getRa){ ra2=pl.getRa(jd); dec2=pl.getDec(jd); }
+    else{ var pp=getPlanetPos(pl.pdata,jd); ra2=pp.ra; dec2=pp.dec; }
+    var hor=raDecToAzAlt(ra2,dec2,lst,LAT);
+    if(hor.alt<0) return;
+    var dAz=Math.abs(hor.az-centerAz); if(dAz>180) dAz=360-dAz;
+    var d=Math.sqrt(dAz*dAz+(hor.alt-centerAlt)*(hor.alt-centerAlt));
+    if(d<bestDist){bestDist=d;bestObj={type:'special',data:pl,hor:hor};}
+  });
+
+  if(!bestObj){
+    showToast(t('notFound')); return;
+  }
+
+  var obj2 = bestObj.type==='deep' ? bestObj.data : bestObj.data;
+  var hor2 = bestObj.hor;
+
+  // Build unified display object
+  var displayObj = {
+    id: obj2.id,
+    name: obj2.name,
+    type: obj2.type,
+    desc: obj2.desc,
+    facts: obj2.facts,
+    funFact: obj2.funFact,
+    ra: obj2.ra || 0,
+    dec: obj2.dec || 0,
+    az: hor2.az, alt: hor2.alt
+  };
+  CURRENT_OBJ = displayObj;
+  showCard(displayObj);
+}
+
+function showCard(obj){
+  document.getElementById('obj-card').classList.add('visible');
+
+  var typeLabels={
+    star:t('typesStar'), planet:t('typePlanet'), moon:t('typeMoon'),
+    nebula:t('typeNebula'), cluster:t('typeCluster'), galaxy:t('typeGalaxy'),
+    sun:t('typeSun')
+  };
+  document.getElementById('card-name').textContent = obj.name[LANG] || obj.name.es;
+  document.getElementById('card-type-badge').textContent = typeLabels[obj.type] || obj.type;
+  document.getElementById('card-desc').textContent = (obj.desc||{})[LANG] || (obj.desc||{}).es || '';
+
+  // Facts
+  var factsEl=document.getElementById('card-facts');
+  factsEl.innerHTML='';
+  var facts=(obj.facts||{})[LANG]||(obj.facts||{}).es||{};
+  var factKeys=Object.keys(facts);
+  var factLabels={
+    dist:t('distLabel'), mag:t('magLabel'), type:'Tipo', temp:t('tempLabel'),
+    per:t('periodLabel'), moons:t('moonsLabel'), size:'Tamaño',
+    'dist':'Distancia','mag':'Magnitud','type':'Tipo espectral','temp':'Temperatura',
+    'per':'Período orbital','size':'Tamaño'
+  };
+  factKeys.forEach(function(k){
+    var chip=document.createElement('div'); chip.className='fact-chip';
+    chip.innerHTML='<div class="fk">'+(factLabels[k]||k)+'</div><div class="fv">'+(facts[k]||'—')+'</div>';
+    factsEl.appendChild(chip);
+  });
+
+  // Fun fact
+  var ff=(obj.funFact||{})[LANG]||(obj.funFact||{}).es;
+  if(ff){
+    var ffChip=document.createElement('div');
+    ffChip.className='fact-chip';
+    ffChip.style.gridColumn='1/-1';
+    ffChip.style.background='rgba(240,192,96,0.06)';
+    ffChip.style.borderColor='rgba(240,192,96,0.2)';
+    ffChip.innerHTML='<div class="fk" style="color:rgba(240,192,96,0.7)">'+t('funFact')+'</div><div class="fv" style="font-size:12px;line-height:1.55;color:rgba(232,240,255,0.75)">'+ff+'</div>';
+    factsEl.appendChild(ffChip);
+  }
+
+  // Coords
+  document.getElementById('cc-az').textContent=fAz(obj.az);
+  document.getElementById('cc-alt').textContent=fAlt(obj.alt);
+  document.getElementById('cc-ra').textContent=obj.ra?fRA(obj.ra):'—';
+  document.getElementById('cc-dec').textContent=obj.dec?fDec(obj.dec):'—';
+  document.querySelector('#card-coords').style.display=obj.ra?'flex':'none';
+}
+
+function closeCard(){
+  document.getElementById('obj-card').classList.remove('visible');
+  CURRENT_OBJ=null;
+}
+
+// ════════════════════════════════════════════════
+// PILLS — visible now
+// ════════════════════════════════════════════════
+function buildPills(){
+  var el=document.getElementById('visible-strip'); el.innerHTML='';
+  var jd=getJD(new Date()), lst=getLST(jd,LON);
+  var visible=[];
+
+  // Sun & Moon
+  var sun2=getSunPos(jd);
+  var sunH=raDecToAzAlt(sun2.ra,sun2.dec,lst,LAT);
+  if(sunH.alt>0) visible.push({name:{es:'Sol ☀',en:'Sun ☀'},type:'bright',alt:sunH.alt});
+  var moon2=getMoonPos(jd);
+  var moonH=raDecToAzAlt(moon2.ra,moon2.dec,lst,LAT);
+  if(moonH.alt>0) visible.push({name:{es:'Luna',en:'Moon'},type:'bright',alt:moonH.alt, phase:moonPhaseName(moon2.phase,LANG)});
+
+  // Planets
+  var pNames=[{es:'Mercurio',en:'Mercury'},{es:'Venus',en:'Venus'},{es:'Marte',en:'Mars'},{es:'Júpiter',en:'Jupiter'},{es:'Saturno',en:'Saturn'}];
+  PLANETS_DATA.forEach(function(pd,i){
+    var pp=getPlanetPos(pd,jd);
+    var ph=raDecToAzAlt(pp.ra,pp.dec,lst,LAT);
+    if(ph.alt>5) visible.push({name:pNames[i],type:'planet',alt:ph.alt});
+  });
+
+  // Stars/DSO
+  OBJECTS.forEach(function(o){
+    var oh=raDecToAzAlt(o.ra,o.dec,lst,LAT);
+    if(oh.alt>10&&o.mag<4) visible.push({name:o.name, type:o.type==='star'?(o.mag<1?'bright':'star'):'special', alt:oh.alt, obj:o});
+  });
+
+  // Sort by altitude
+  visible.sort(function(a,b){return b.alt-a.alt;});
+  visible.slice(0,12).forEach(function(v){
+    var pill=document.createElement('div');
+    pill.className='obj-pill'+(v.type==='bright'?' bright':v.type==='planet'?' planet':v.type==='special'?' special':'');
+    var dotColor=v.type==='bright'?'#f0c060':v.type==='planet'?'#60d4f0':'#f06080';
+    var label=v.name[LANG]+(v.phase?' · '+v.phase:'');
+    pill.innerHTML='<div class="dot" style="background:'+dotColor+'"></div>'+label;
+    if(v.obj){pill.onclick=function(){CURRENT_OBJ=null;whatAmILooking();};}
+    el.appendChild(pill);
+  });
+}
+
+// ════════════════════════════════════════════════
+// MAP OVERLAY
+// ════════════════════════════════════════════════
+function openMap(){
+  var ov=document.getElementById('info-overlay');
+  ov.classList.add('open');
+  setTimeout(drawMapCanvas, 100);
+}
+function closeMap(){ document.getElementById('info-overlay').classList.remove('open'); }
+
+function drawMapCanvas(){
+  var mc=document.getElementById('sky-map-canvas');
+  var W=window.innerWidth, H=window.innerHeight-80;
+  mc.width=W; mc.height=H;
+  var ctx2=mc.getContext('2d');
+  var jd=getJD(new Date()), lst=getLST(jd,LON);
+  var cx=W/2, cy=H/2, r=Math.min(W,H)*0.44;
+
+  // BG
+  ctx2.fillStyle='#070b18'; ctx2.fillRect(0,0,W,H);
+  ctx2.beginPath(); ctx2.arc(cx,cy,r,0,Math.PI*2);
+  ctx2.fillStyle='#08101e'; ctx2.fill();
+  ctx2.strokeStyle='rgba(255,255,255,0.12)'; ctx2.lineWidth=1; ctx2.stroke();
+
+  // Grid circles
+  for(var al=30;al<90;al+=30){
+    var rr=(90-al)/90*r;
+    ctx2.beginPath(); ctx2.arc(cx,cy,rr,0,Math.PI*2);
+    ctx2.strokeStyle='rgba(255,255,255,0.06)'; ctx2.lineWidth=0.5; ctx2.stroke();
+    ctx2.fillStyle='rgba(232,240,255,0.25)'; ctx2.font='10px DM Sans';
+    ctx2.fillText(al+'°',cx+3,cy-rr+12);
+  }
+  // Cardinals on map
+  ctx2.font='bold 12px Unbounded'; ctx2.textAlign='center';
+  ctx2.fillStyle='rgba(240,192,96,0.8)'; ctx2.fillText('N',cx,cy-r-8);
+  ctx2.fillStyle='rgba(232,240,255,0.4)'; ctx2.fillText('S',cx,cy+r+16);
+  ctx2.fillText('E',cx+r+16,cy+4); ctx2.fillText('O',cx-r-12,cy+4);
+  ctx2.textAlign='left';
+
+  // Objects on map
+  function mapProject(az,alt){
+    if(alt<0) return null;
+    var rr2=(90-alt)/90*r;
+    var a=(az-180)*D2R;
+    return {x:cx+rr2*Math.sin(a), y:cy-rr2*Math.cos(a)};
+  }
+
+  OBJECTS.forEach(function(obj){
+    var oh=raDecToAzAlt(obj.ra,obj.dec,lst,LAT);
+    if(oh.alt<0) return;
+    var p=mapProject(oh.az,oh.alt); if(!p) return;
+    var sz2=starSize(obj.mag)*0.85;
+    ctx2.fillStyle=obj.color||'#ffffff';
+    ctx2.beginPath(); ctx2.arc(p.x,p.y,sz2,0,Math.PI*2); ctx2.fill();
+    if(obj.mag<2){
+      ctx2.font='9px DM Sans'; ctx2.fillStyle='rgba(232,240,255,0.55)';
+      ctx2.fillText(obj.name[LANG],p.x+sz2+3,p.y+3);
+    }
+  });
+
+  // Sun on map
+  var sun3=getSunPos(jd), sh=raDecToAzAlt(sun3.ra,sun3.dec,lst,LAT);
+  if(sh.alt>0){var sp=mapProject(sh.az,sh.alt);if(sp){ctx2.fillStyle='#ffcc00';ctx2.beginPath();ctx2.arc(sp.x,sp.y,6,0,Math.PI*2);ctx2.fill();}}
+  // Moon on map
+  var moon3=getMoonPos(jd), mh=raDecToAzAlt(moon3.ra,moon3.dec,lst,LAT);
+  if(mh.alt>0){var mp2=mapProject(mh.az,mh.alt);if(mp2){ctx2.fillStyle='#c8d8ff';ctx2.beginPath();ctx2.arc(mp2.x,mp2.y,5,0,Math.PI*2);ctx2.fill();}}
+
+  // Zenith
+  ctx2.fillStyle='rgba(96,212,240,0.5)'; ctx2.beginPath(); ctx2.arc(cx,cy,3,0,Math.PI*2); ctx2.fill();
+  ctx2.font='9px DM Sans'; ctx2.fillStyle='rgba(96,212,240,0.5)'; ctx2.fillText(LANG==='es'?'Zenit':'Zenith',cx+5,cy-3);
+}
+
+// ════════════════════════════════════════════════
+// TOUCH/DRAG
+// ════════════════════════════════════════════════
+function setupTouch(){
+  canvas.addEventListener('touchstart',function(e){
+    if(e.touches.length===1){isDrag=true;lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};}
+    e.preventDefault();
+  },{passive:false});
+  canvas.addEventListener('touchmove',function(e){
+    if(isDrag&&e.touches.length===1){
+      var dx=e.touches[0].clientX-lastTouch.x, dy=e.touches[0].clientY-lastTouch.y;
+      viewAz=mod360(viewAz-dx*0.15);
+      viewAlt=Math.max(5,Math.min(88,viewAlt+dy*0.1));
+      lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    }
+    if(e.touches.length===2){
+      // pinch zoom
+    }
+    e.preventDefault();
+  },{passive:false});
+  canvas.addEventListener('touchend',function(){isDrag=false;});
+  canvas.addEventListener('mousemove',function(e){
+    if(!isDrag) return;
+    var dx=e.clientX-lastTouch.x, dy=e.clientY-lastTouch.y;
+    viewAz=mod360(viewAz-dx*0.25);
+    viewAlt=Math.max(5,Math.min(88,viewAlt+dy*0.18));
+    lastTouch={x:e.clientX,y:e.clientY};
+    var sky=unproject(e.clientX,e.clientY);
+    if(sky){
+      document.getElementById('cb-az').textContent=fAz(sky.az);
+      document.getElementById('cb-alt').textContent=fAlt(sky.alt);
+      var rd=azAltToRA(sky.az,sky.alt);
+      document.getElementById('cb-ra').textContent=fRA(rd.ra);
+      document.getElementById('cb-dec').textContent=fDec(rd.dec);
+    }
+  });
+  canvas.addEventListener('mousedown',function(e){isDrag=true;lastTouch={x:e.clientX,y:e.clientY};});
+  canvas.addEventListener('mouseup',function(){isDrag=false;});
+  canvas.addEventListener('wheel',function(e){
+    viewFov=Math.max(20,Math.min(130,viewFov+e.deltaY*0.05));
+    e.preventDefault();
+  },{passive:false});
+}
+
+function unproject(px,py){
+  var W=canvas.width, H=canvas.height;
+  var scale=Math.min(W,H)/2*(90/viewFov);
+  var dx=px-W/2, dy=H/2-py, r2=Math.sqrt(dx*dx+dy*dy);
+  var angle=Math.atan2(dx,dy);
+  var theta=2*Math.atan(r2/scale);
+  var vAltR=viewAlt*D2R;
+  var sinAlt=Math.cos(theta)*Math.sin(vAltR)+Math.sin(theta)*Math.cos(vAltR)*Math.cos(angle);
+  var alt=Math.asin(Math.max(-1,Math.min(1,sinAlt)))*R2D;
+  var cosAzD=(Math.cos(theta)-Math.sin(alt*D2R)*Math.sin(vAltR))/(Math.cos(alt*D2R)*Math.cos(vAltR));
+  var azD=Math.acos(Math.max(-1,Math.min(1,cosAzD)))*R2D;
+  if(Math.sin(angle)<0) azD=-azD;
+  return {az:mod360(viewAz+azD),alt:alt};
+}
+
+function azAltToRA(az,alt){
+  var azR=az*D2R, altR=alt*D2R, latR=LAT*D2R;
+  var sinDec=Math.sin(altR)*Math.sin(latR)+Math.cos(altR)*Math.cos(latR)*Math.cos(azR);
+  var dec=Math.asin(Math.max(-1,Math.min(1,sinDec)))*R2D;
+  var cosHA=(Math.sin(altR)-Math.sin(dec*D2R)*Math.sin(latR))/(Math.cos(dec*D2R)*Math.cos(latR));
+  var ha=Math.acos(Math.max(-1,Math.min(1,cosHA)))*R2D;
+  if(Math.sin(azR)>0) ha=360-ha;
+  return {ra:mod24((currentLST-ha)/15),dec:dec};
+}
+
+function showToast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},2500);
+}
+
+window.addEventListener('resize',function(){resize();});
+resize();
+setupTouch();
+buildPills();
+setInterval(buildPills, 60000);
+render();
+</script>
+</body>
+</html>

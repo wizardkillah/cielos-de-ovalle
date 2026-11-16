@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STELLARIUM — Mapa Celeste</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600&display=swap');
+
+  :root {
+    --void: #000308;
+    --deep: #020510;
+    --nebula: #060d1f;
+    --accent: #4a9eff;
+    --gold: #c8a84b;
+    --dim: #1a2a4a;
+    --text: #8ab4d4;
+    --bright: #e8f4ff;
+    --red: #ff4444;
+    --green: #44ff88;
+    --panel: rgba(6,13,31,0.92);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--dim);
+    background: var(--panel);
+    z-index: 10;
+    backdrop-filter: blur(10px);
+  }
+
+  #header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--gold);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  #time-display {
+    text-align: right;
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  #time-display .utc { color: var(--accent); }
+  #time-display .lst { color: var(--gold); }
+
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #sky-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #sidebar {
+    width: 260px;
+    background: var(--panel);
+    border-left: 1px solid var(--dim);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 5;
+  }
+
+  .panel {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--dim);
+  }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .coord-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 5px;
+    align-items: center;
+  }
+
+  .coord-label { color: var(--text); opacity: 0.7; }
+  .coord-value { color: var(--bright); font-weight: 700; }
+  .coord-value.accent { color: var(--accent); }
+  .coord-value.gold { color: var(--gold); }
+
+  #star-info {
+    min-height: 160px;
+    background: rgba(74,158,255,0.04);
+    border: 1px solid rgba(74,158,255,0.15);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  #star-info .star-name {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    color: var(--bright);
+    margin-bottom: 4px;
+  }
+
+  #star-info .star-designation {
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+
+  #star-info .star-detail {
+    font-size: 10px;
+    line-height: 2;
+    color: var(--text);
+  }
+
+  #star-info .star-detail span {
+    color: var(--bright);
+    float: right;
+  }
+
+  .no-selection {
+    color: var(--text);
+    opacity: 0.4;
+    font-size: 11px;
+    text-align: center;
+    margin-top: 30px;
+    font-style: italic;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+
+  .toggle-btn {
+    background: var(--dim);
+    border: 1px solid rgba(74,158,255,0.3);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn.active {
+    background: rgba(74,158,255,0.2);
+    border-color: var(--accent);
+    color: var(--bright);
+  }
+
+  .toggle-btn:hover { border-color: var(--accent); }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--dim);
+    outline: none;
+    margin-top: 6px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  #location-input {
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+  }
+
+  .loc-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+  }
+
+  .loc-field label { width: 32px; color: var(--text); opacity: 0.7; }
+
+  .loc-field input {
+    flex: 1;
+    background: rgba(74,158,255,0.08);
+    border: 1px solid var(--dim);
+    color: var(--bright);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .loc-field input:focus { border-color: var(--accent); }
+
+  .btn-locate {
+    background: rgba(74,158,255,0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 2px;
+    text-align: center;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .btn-locate:hover {
+    background: rgba(74,158,255,0.25);
+    color: var(--bright);
+  }
+
+  #crosshair-coords {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    border: 1px solid var(--dim);
+    padding: 6px 16px;
+    font-size: 11px;
+    color: var(--text);
+    border-radius: 3px;
+    pointer-events: none;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    display: flex;
+    gap: 20px;
+  }
+
+  #crosshair-coords span { color: var(--bright); }
+
+  #compass {
+    position: absolute;
+    bottom: 50px;
+    left: 16px;
+    width: 70px;
+    height: 70px;
+    opacity: 0.6;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  .tooltip {
+    position: absolute;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    padding: 6px 10px;
+    font-size: 10px;
+    color: var(--bright);
+    border-radius: 3px;
+    pointer-events: none;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    transform: translate(-50%, -110%);
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>✦ Stellarium — Mapa Celeste</h1>
+  <div id="time-display">
+    <div>UTC: <span class="utc" id="utc-time">--:--:--</span></div>
+    <div>LST: <span class="lst" id="lst-time">--h --m --s</span></div>
+    <div id="jd-display" style="font-size:10px;opacity:0.6;">JD: -------</div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="sky-container">
+    <canvas id="sky-canvas"></canvas>
+    <div id="crosshair-coords">
+      Az: <span id="cx-az">--°</span> &nbsp; Alt: <span id="cx-alt">--°</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+      AR: <span id="cx-ra">--h --m</span> &nbsp; Dec: <span id="cx-dec">--°</span>
+    </div>
+    <svg id="compass" viewBox="0 0 70 70">
+      <circle cx="35" cy="35" r="33" fill="none" stroke="#1a2a4a" stroke-width="1"/>
+      <text x="35" y="8" text-anchor="middle" fill="#4a9eff" font-family="Space Mono" font-size="9">N</text>
+      <text x="35" y="66" text-anchor="middle" fill="#4a9eff" font-family="Space Mono" font-size="9">S</text>
+      <text x="64" y="39" text-anchor="middle" fill="#4a9eff" font-family="Space Mono" font-size="9">E</text>
+      <text x="6" y="39" text-anchor="middle" fill="#4a9eff" font-family="Space Mono" font-size="9">O</text>
+      <line x1="35" y1="12" x2="35" y2="58" stroke="#1a2a4a" stroke-width="0.5"/>
+      <line x1="12" y1="35" x2="58" y2="35" stroke="#1a2a4a" stroke-width="0.5"/>
+    </svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div id="sidebar">
+
+    <div class="panel">
+      <div class="panel-title">Objeto Seleccionado</div>
+      <div id="star-info">
+        <div class="no-selection">Haz clic en una estrella para ver sus coordenadas y datos</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Cursor</div>
+      <div class="coord-row">
+        <span class="coord-label">Azimut</span>
+        <span class="coord-value accent" id="s-az">---</span>
+      </div>
+      <div class="coord-row">
+        <span class="coord-label">Altitud</span>
+        <span class="coord-value accent" id="s-alt">---</span>
+      </div>
+      <div class="coord-row">
+        <span class="coord-label">Asc. Recta</span>
+        <span class="coord-value gold" id="s-ra">---</span>
+      </div>
+      <div class="coord-row">
+        <span class="coord-label">Declinación</span>
+        <span class="coord-value gold" id="s-dec">---</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Mi Ubicación</div>
+      <div id="location-input">
+        <div class="loc-field">
+          <label>Lat</label>
+          <input type="number" id="inp-lat" value="-30.6" step="0.01" min="-90" max="90">
+        </div>
+        <div class="loc-field">
+          <label>Lon</label>
+          <input type="number" id="inp-lon" value="-71.2" step="0.01" min="-180" max="180">
+        </div>
+        <button class="btn-locate" onclick="applyLocation()">◎ APLICAR</button>
+        <button class="btn-locate" onclick="geoLocate()" style="border-color:var(--gold);color:var(--gold);">⊕ GPS AUTOMÁTICO</button>
+      </div>
+      <div style="margin-top:8px;font-size:10px;opacity:0.5;" id="loc-name">Ovalle, Chile</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Vista</div>
+      <div class="controls">
+        <div class="control-row">
+          <span>Constelaciones</span>
+          <button class="toggle-btn active" id="btn-const" onclick="toggle('constellations', this)">ON</button>
+        </div>
+        <div class="control-row">
+          <span>Nombres estrellas</span>
+          <button class="toggle-btn active" id="btn-names" onclick="toggle('starNames', this)">ON</button>
+        </div>
+        <div class="control-row">
+          <span>Coordenadas</span>
+          <button class="toggle-btn" id="btn-grid" onclick="toggle('grid', this)">OFF</button>
+        </div>
+        <div class="control-row">
+          <span>Vía Láctea</span>
+          <button class="toggle-btn active" id="btn-mw" onclick="toggle('milkyway', this)">ON</button>
+        </div>
+        <div class="control-row">
+          <span>Horizonte</span>
+          <button class="toggle-btn active" id="btn-hor" onclick="toggle('horizon', this)">ON</button>
+        </div>
+        <div style="margin-top:4px;">
+          <div class="coord-row"><span class="coord-label" style="font-size:10px;">Zoom / FOV</span><span class="coord-value" id="fov-display" style="font-size:10px;">90°</span></div>
+          <input type="range" id="zoom-slider" min="20" max="180" value="90" oninput="setFov(this.value)">
+        </div>
+        <div>
+          <div class="coord-row"><span class="coord-label" style="font-size:10px;">Límite magnitud</span><span class="coord-value" id="mag-display" style="font-size:10px;">6.5</span></div>
+          <input type="range" id="mag-slider" min="1" max="8" step="0.5" value="6.5" oninput="setMagLimit(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Leyenda — Magnitud</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="width:8px;height:8px;background:#fff;"></div><span>≤0</span></div>
+        <div class="legend-item"><div class="legend-dot" style="width:6px;height:6px;background:#e8f4ff;"></div><span>1</span></div>
+        <div class="legend-item"><div class="legend-dot" style="width:5px;height:5px;background:#b0d0f0;"></div><span>2</span></div>
+        <div class="legend-item"><div class="legend-dot" style="width:4px;height:4px;background:#8ab4d4;"></div><span>3</span></div>
+        <div class="legend-item"><div class="legend-dot" style="width:3px;height:3px;background:#6090b0;"></div><span>4</span></div>
+        <div class="legend-item"><div class="legend-dot" style="width:2px;height:2px;background:#405070;"></div><span>5+</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// CATÁLOGO ESTELAR (Hipparcos principales)
+// ra en horas decimales, dec en grados, mag = magnitud visual
+// ─────────────────────────────────────────
+const STARS = [
+  // Nombre, Constelación, RA(h), Dec(°), Mag, Color(K)
+  ["Sirius",      "CMa", 6.7525,  -16.716, -1.46, "A1V", "Canícula - α CMa"],
+  ["Canopus",     "Car", 6.3992,  -52.696, -0.72, "F0Ib","α Carinae"],
+  ["Rigil Kent",  "Cen", 14.6600, -60.835, -0.27, "G2V", "α Centauri A"],
+  ["Arcturus",    "Boo", 14.2611,  19.182,  -0.05,"K1.5","α Bootis"],
+  ["Vega",        "Lyr", 18.6156,  38.784,   0.03, "A0V", "α Lyrae"],
+  ["Capella",     "Aur",  5.2781,  45.998,   0.08, "G8III","α Aurigae"],
+  ["Rigel",       "Ori",  5.2423,  -8.202,   0.12, "B8Ia","β Orionis"],
+  ["Procyon",     "CMi",  7.6553,   5.225,   0.38, "F5IV","α CMi"],
+  ["Achernar",    "Eri",  1.6285, -57.237,   0.46, "B3Vpe","α Eridani"],
+  ["Betelgeuse",  "Ori",  5.9195,   7.407,   0.50, "M1Ia","α Orionis"],
+  ["Hadar",       "Cen", 14.0639, -60.373,   0.61, "B1II","β Centauri"],
+  ["Altair",      "Aql", 19.8462,   8.868,   0.77, "A7V", "α Aquilae"],
+  ["Acrux",       "Cru", 12.4432, -63.099,   0.77, "B0.5IV","α Crucis"],
+  ["Aldebaran",   "Tau",  4.5987,  16.509,   0.85, "K5III","α Tauri"],
+  ["Spica",       "Vir", 13.4199, -11.161,   1.04, "B1V", "α Virginis"],
+  ["Antares",     "Sco", 16.4901, -26.432,   1.09, "M1.5","α Scorpii"],
+  ["Pollux",      "Gem",  7.7553,  28.026,   1.14, "K0III","β Geminorum"],
+  ["Fomalhaut",   "PsA", 22.9608, -29.623,   1.16, "A3V", "α PsA"],
+  ["Deneb",       "Cyg", 20.6906,  45.280,   1.25, "A2Ia","α Cygni"],
+  ["Mimosa",      "Cru", 12.7954, -59.689,   1.25, "B0.5III","β Crucis"],
+  ["Regulus",     "Leo", 10.1395,  11.967,   1.35, "B7V", "α Leonis"],
+  ["Adhara",      "CMa",  6.9771, -28.972,   1.50, "B2II","ε CMa"],
+  ["Shaula",      "Sco", 17.5600, -37.104,   1.63, "B2IV","λ Scorpii"],
+  ["Bellatrix",   "Ori",  5.4185,   6.350,   1.64, "B2III","γ Orionis"],
+  ["Elnath",      "Tau",  5.4381,  28.608,   1.65, "B7III","β Tauri"],
+  ["Miaplacidus", "Car",  9.2200, -69.717,   1.68, "A2IV","β Carinae"],
+  ["Alnilam",     "Ori",  5.6036,  -1.202,   1.70, "B0Ia","ε Orionis"],
+  ["Gamma Vel",   "Vel",  8.1588, -47.337,   1.72, "WC8", "γ Velorum"],
+  ["Alnitak",     "Ori",  5.6795,  -1.944,   1.74, "O9.7","ζ Orionis"],
+  ["Alioth",      "UMa", 12.9004,  55.960,   1.77, "A0p", "ε UMa"],
+  ["Dubhe",       "UMa", 11.0621,  61.751,   1.79, "K0IIIa","α UMa"],
+  ["Mirfak",      "Per",  3.4052,  49.861,   1.79, "F5Ib","α Persei"],
+  ["Wezen",       "CMa",  7.1397, -26.393,   1.83, "F8Ia","δ CMa"],
+  ["Sargas",      "Sco", 17.6220, -42.998,   1.87, "F1II","θ Scorpii"],
+  ["Kaus Aust",   "Sgr", 18.4028, -34.385,   1.85, "B9.5","ε Sagittarii"],
+  ["Avior",       "Car",  8.3753, -59.509,   1.86, "K3III","ε Carinae"],
+  ["Alkaid",      "UMa", 13.7924,  49.313,   1.86, "B3V", "η UMa"],
+  ["Menkent",     "Cen", 14.1115, -36.370,   2.06, "K0III","θ Centauri"],
+  ["Atria",       "TrA", 16.8111, -69.028,   1.92, "K4II","α TrA"],
+  ["Alhena",      "Gem",  6.6285,  16.399,   1.93, "A0IV","γ Geminorum"],
+  ["Peacock",     "Pav", 18.8233, -56.735,   1.94, "B2IV","α Pavonis"],
+  ["Polaris",     "UMi",  2.5303,  89.264,   1.97, "F7Ib","α UMi — Estrella Polar"],
+  ["Theta Car",   "Car", 10.7158, -64.394,   2.76, "B0Vp","θ Carinae"],
+  ["Gacrux",      "Cru", 12.5193, -57.113,   1.63, "M3.5","γ Crucis"],
+  ["Castor",      "Gem",  7.5767,  31.889,   1.58, "A1V", "α Geminorum"],
+  ["Phecda",      "UMa", 11.8971,  53.695,   2.44, "A0Ve","γ UMa"],
+  ["Naos",        "Pup",  7.8219, -40.003,   2.25, "O4If","ζ Puppis"],
+  ["Alphard",     "Hya",  9.4597,  -8.659,   1.98, "K3III","α Hydrae"],
+  ["Hamal",       "Ari",  2.1197,  23.463,   2.00, "K2III","α Arietis"],
+  ["Diphda",      "Cet",  0.7264, -17.987,   2.04, "K0III","β Ceti"],
+  ["Nunki",       "Sgr", 18.9211, -26.297,   2.05, "B2.5V","σ Sagittarii"],
+  ["Mira",        "Cet",  2.3219,  -2.978,   6.50, "M7IIIe","o Ceti (variable)"],
+  ["Denebola",    "Leo", 11.8171,  14.572,   2.14, "A3V", "β Leonis"],
+  ["Mu Vel",      "Vel", 10.7793, -49.420,   2.69, "G5III","μ Velorum"],
+  ["Saiph",       "Ori",  5.7953,  -9.670,   2.06, "B0.5Ia","κ Orionis"],
+  ["Mintaka",     "Ori",  5.5333,  -0.299,   2.23, "O9.5II","δ Orionis"],
+  ["Caph",        "Cas",  0.1527,  59.150,   2.27, "F2IV","β Cassiopeiae"],
+  ["Schedar",     "Cas",  0.6750,  56.537,   2.24, "K0IIIa","α Cassiopeiae"],
+  ["Eta Car",     "Car", 10.7509, -59.684,   4.30, "LBV","η Carinae"],
+  ["Zubenelg",    "Lib", 14.8480, -16.042,   2.61, "A3IV","α Librae"],
+  ["Gienah",      "Crv", 12.1688, -17.542,   2.59, "B8III","γ Corvi"],
+  ["Kochab",      "UMi", 14.8451,  74.156,   2.08, "K4III","β UMi"],
+  ["Rasalhague",  "Oph", 17.5823,  12.560,   2.08, "A5III","α Ophiuchi"],
+  ["Eltanin",     "Dra", 17.9435,  51.489,   2.24, "K5III","γ Draconis"],
+  ["Almach",      "And",  2.0650,  42.330,   2.10, "K3II","γ Andromedae"],
+  ["Alrescha",    "Psc",  2.0344,   2.764,   3.82, "A0p", "α Piscium"],
+  ["Mirach",      "And",  1.1622,  35.621,   2.06, "M0III","β Andromedae"],
+  ["Alpheratz",   "And",  0.1398,  29.090,   2.07, "B8IVp","α Andromedae"],
+  ["Enif",        "Peg", 21.7364,   9.875,   2.38, "K2Ib","ε Pegasi"],
+  ["Markab",      "Peg", 23.0794,  15.205,   2.49, "A0IV","α Pegasi"],
+  ["Scheat",      "Peg", 23.0629,  28.083,   2.42, "M2II","β Pegasi"],
+  ["Algenib",     "Peg",  0.2211,  15.184,   2.83, "B2IV","γ Pegasi"],
+  ["Sadalsuud",   "Aqr", 21.5260,  -5.571,   2.90, "G0Ib","β Aquarii"],
+  ["Sadalmelik",  "Aqr", 22.0961,  -0.320,   2.96, "G2Ib","α Aquarii"],
+  ["Ankaa",       "Phe",  0.4381, -42.306,   2.40, "K0III","α Phoenicis"],
+  ["Grus α",      "Gru", 22.1373, -46.961,   1.74, "B7IV","α Gruis"],
+  ["Theta Sco",   "Sco", 17.6220, -42.998,   1.87, "F1II","θ Sco"],
+  ["Porrima",     "Vir", 12.6942,  -1.449,   2.74, "F0V", "γ Virginis"],
+  ["Algorab",     "Crv", 12.4977, -16.516,   2.95, "C2.5","δ Corvi"],
+  ["Sabik",       "Oph", 17.1724, -15.725,   2.43, "A2V", "η Ophiuchi"],
+  ["Ascella",     "Sgr", 19.0436, -29.880,   2.60, "A2III","ζ Sagittarii"],
+  ["Phact",       "Col",  5.6609, -34.074,   2.65, "B7IVe","α Columbae"],
+  ["Murzim",      "CMa",  6.3784, -17.956,   1.98, "B1II","β CMa"],
+  ["Zeta Pup",    "Pup",  7.8219, -40.003,   2.25, "O5Ia","ζ Puppis"],
+  ["Aspidiske",   "Car",  9.2843, -59.275,   2.21, "A8Ib","ι Carinae"],
+  ["Suhail",      "Vel",  9.1330, -43.433,   2.21, "K4Ib","λ Velorum"],
+  ["Regor",       "Vel",  8.1588, -47.337,   1.72, "WC8+","γ Velorum"],
+  ["Al Nair",     "Gru", 22.1373, -46.961,   1.74, "B7IV","α Gruis"],
+  ["Muscida",     "UMa",  8.5011,  60.718,   3.35, "G4II","ο UMa"],
+  ["Merak",       "UMa", 11.0307,  56.383,   2.37, "A1V", "β UMa"],
+  ["Phecda",      "UMa", 11.8971,  53.695,   2.44, "A0Ve","γ UMa"],
+  ["Megrez",      "UMa", 12.2572,  57.033,   3.32, "A3V", "δ UMa"],
+  ["Alioth",      "UMa", 12.9004,  55.960,   1.77, "A0p", "ε UMa"],
+  ["Mizar",       "UMa", 13.3988,  54.926,   2.27, "A2V", "ζ UMa"],
+  ["Lambda Sco",  "Sco", 17.5600, -37.104,   1.63, "B2IV","λ Scorpii"],
+  ["Dschubba",    "Sco", 16.0051, -22.622,   2.29, "B0.3IV","δ Scorpii"],
+  ["Lesath",      "Sco", 17.5303, -37.296,   2.69, "B2IV","υ Scorpii"],
+  ["Graffias",    "Sco", 16.0908, -19.805,   2.62, "B0.5V","β Scorpii"],
+];
+
+// ─────────────────────────────────────────
+// LÍNEAS DE CONSTELACIONES
+// Pares de índices a STARS array
+// ─────────────────────────────────────────
+const CONST_LINES = {
+  "Crux": [
+    ["Acrux","Gacrux"],["Mimosa","Theta Car"]
+  ],
+  "Cen": [
+    ["Rigil Kent","Hadar"],["Hadar","Menkent"]
+  ],
+  "Ori": [
+    ["Betelgeuse","Bellatrix"],["Bellatrix","Rigel"],["Rigel","Saiph"],
+    ["Saiph","Betelgeuse"],["Alnilam","Alnitak"],["Alnilam","Mintaka"],
+    ["Alnitak","Saiph"],["Mintaka","Bellatrix"]
+  ],
+  "UMa": [
+    ["Dubhe","Merak"],["Merak","Phecda"],["Phecda","Megrez"],["Megrez","Alioth"],
+    ["Alioth","Mizar"],["Mizar","Alkaid"],["Megrez","Dubhe"]
+  ],
+  "Sco": [
+    ["Antares","Graffias"],["Antares","Dschubba"],["Antares","Shaula"],
+    ["Shaula","Lambda Sco"],["Shaula","Lesath"]
+  ],
+  "Sgr": [
+    ["Kaus Aust","Nunki"],["Kaus Aust","Ascella"],["Nunki","Ascella"]
+  ],
+  "Gem": [
+    ["Castor","Pollux"],["Pollux","Alhena"],["Castor","Elnath"]
+  ],
+  "Cas": [
+    ["Caph","Schedar"],["Schedar","Almach"]
+  ],
+  "And": [
+    ["Alpheratz","Mirach"],["Mirach","Almach"]
+  ],
+  "Peg": [
+    ["Alpheratz","Markab"],["Markab","Scheat"],["Scheat","Algenib"],["Algenib","Alpheratz"]
+  ],
+  "Lyr": [
+    ["Vega","Sheliak"]
+  ],
+  "Aql": [
+    ["Altair","Tarazed"]
+  ],
+  "CMa": [
+    ["Sirius","Adhara"],["Sirius","Murzim"],["Adhara","Wezen"]
+  ],
+  "Car": [
+    ["Canopus","Miaplacidus"],["Miaplacidus","Aspidiske"],["Avior","Aspidiske"]
+  ]
+};
+
+// ─────────────────────────────────────────
+// ESTADO DE LA APLICACIÓN
+// ─────────────────────────────────────────
+const state = {
+  lat: -30.6,
+  lon: -71.2,
+  fov: 90,
+  magLimit: 6.5,
+  constellations: true,
+  starNames: true,
+  grid: false,
+  milkyway: true,
+  horizon: true,
+  mouseAz: 0,
+  mouseAlt: 0,
+  mouseRA: 0,
+  mouseDec: 0,
+  selected: null,
+  isDragging: false,
+  dragStart: null,
+  viewAz: 180,
+  viewAlt: 40,
+  zoom: 1
+};
+
+// ─────────────────────────────────────────
+// ASTRONOMÍA — funciones de conversión
+// ─────────────────────────────────────────
+
+function toRad(d) { return d * Math.PI / 180; }
+function toDeg(r) { return r * 180 / Math.PI; }
+
+function getJD(date) {
+  const y = date.getUTCFullYear(), m = date.getUTCMonth()+1, d = date.getUTCDate();
+  const h = date.getUTCHours() + date.getUTCMinutes()/60 + date.getUTCSeconds()/3600;
+  let A = Math.floor((14-m)/12), Y = y+4800-A, M = m+12*A-3;
+  let jdn = d + Math.floor((153*M+2)/5) + 365*Y + Math.floor(Y/4) - Math.floor(Y/100) + Math.floor(Y/400) - 32045;
+  return jdn + (h-12)/24;
+}
+
+function getGMST(jd) {
+  const T = (jd - 2451545.0) / 36525;
+  let gmst = 280.46061837 + 360.98564736629*(jd-2451545) + 0.000387933*T*T - T*T*T/38710000;
+  return ((gmst % 360) + 360) % 360;
+}
+
+function getLST(jd, lonDeg) {
+  const gmst = getGMST(jd);
+  return ((gmst + lonDeg + 360) % 360);
+}
+
+function raDecToAzAlt(ra, dec, lst, lat) {
+  // ra in hours, dec in degrees, lst in degrees, lat in degrees
+  const ha = ((lst - ra*15) % 360 + 360) % 360; // Hour Angle in degrees
+  const haR = toRad(ha), decR = toRad(dec), latR = toRad(lat);
+  const sinAlt = Math.sin(decR)*Math.sin(latR) + Math.cos(decR)*Math.cos(latR)*Math.cos(haR);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+  const cosAz = (Math.sin(decR) - Math.sin(alt)*Math.sin(latR)) / (Math.cos(alt)*Math.cos(latR));
+  let az = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+  if (Math.sin(haR) > 0) az = 2*Math.PI - az;
+  return { az: toDeg(az), alt: toDeg(alt) };
+}
+
+function azAltToRaDec(az, alt, lst, lat) {
+  const azR = toRad(az), altR = toRad(alt), latR = toRad(lat);
+  const sinDec = Math.sin(altR)*Math.sin(latR) + Math.cos(altR)*Math.cos(latR)*Math.cos(azR);
+  const dec = toDeg(Math.asin(Math.max(-1, Math.min(1, sinDec))));
+  const cosHA = (Math.sin(altR) - Math.sin(toRad(dec))*Math.sin(latR)) / (Math.cos(toRad(dec))*Math.cos(latR));
+  let ha = toDeg(Math.acos(Math.max(-1, Math.min(1, cosHA))));
+  if (Math.sin(azR) > 0) ha = 360 - ha;
+  let ra = ((lst - ha) % 360 + 360) % 360;
+  ra = ra / 15;
+  return { ra, dec };
+}
+
+function formatRA(ra) {
+  const h = Math.floor(ra);
+  const m = Math.floor((ra - h) * 60);
+  const s = Math.floor(((ra - h) * 60 - m) * 60);
+  return `${h}h ${m}m ${s}s`;
+}
+
+function formatDec(dec) {
+  const sign = dec >= 0 ? '+' : '-';
+  const d = Math.floor(Math.abs(dec));
+  const m = Math.floor((Math.abs(dec) - d) * 60);
+  return `${sign}${d}° ${m}'`;
+}
+
+function formatAz(az) {
+  return `${az.toFixed(2)}°`;
+}
+
+function formatAlt(alt) {
+  return `${alt.toFixed(2)}°`;
+}
+
+function formatLST(lstDeg) {
+  const h = lstDeg / 15;
+  const hh = Math.floor(h), mm = Math.floor((h-hh)*60), ss = Math.floor(((h-hh)*60-mm)*60);
+  return `${String(hh).padStart(2,'0')}h ${String(mm).padStart(2,'0')}m ${String(ss).padStart(2,'0')}s`;
+}
+
+// ─────────────────────────────────────────
+// CANVAS — RENDERIZADO
+// ─────────────────────────────────────────
+const canvas = document.getElementById('sky-canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+
+// Proyección estereográfica
+function project(az, alt) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const scale = Math.min(W, H) / 2 * (90 / state.fov);
+  
+  // Proyección desde el punto de vista (viewAz, viewAlt)
+  const azR = toRad(az), altR = toRad(alt);
+  const vAzR = toRad(state.viewAz), vAltR = toRad(state.viewAlt);
+  
+  // Coordenadas esféricas relativas al centro de vista
+  const cosDist = Math.sin(altR)*Math.sin(vAltR) + Math.cos(altR)*Math.cos(vAltR)*Math.cos(azR-vAzR);
+  if (cosDist < 0) return null; // detrás del observador
+  
+  const sinDist = Math.sqrt(1 - cosDist*cosDist);
+  const projR = sinDist === 0 ? 0 : scale * sinDist / (1 + cosDist);
+  
+  // Ángulo de posición
+  const dAz = azR - vAzR;
+  const y = Math.cos(altR)*Math.sin(dAz);
+  const x = Math.cos(vAltR)*Math.sin(altR) - Math.sin(vAltR)*Math.cos(altR)*Math.cos(dAz);
+  const posAngle = Math.atan2(y, x);
+  
+  return {
+    x: cx + projR * Math.sin(posAngle),
+    y: cy - projR * Math.cos(posAngle)
+  };
+}
+
+function starSize(mag) {
+  if (mag <= -1) return 6;
+  if (mag <= 0)  return 5.5;
+  if (mag <= 1)  return 4.5;
+  if (mag <= 2)  return 3.5;
+  if (mag <= 3)  return 2.8;
+  if (mag <= 4)  return 2.2;
+  if (mag <= 5)  return 1.6;
+  return 1.0;
+}
+
+function starColor(spectral) {
+  const s = spectral[0];
+  if (s === 'O') return '#9bb8ff';
+  if (s === 'B') return '#c8d8ff';
+  if (s === 'A') return '#f0f4ff';
+  if (s === 'F') return '#fff8e8';
+  if (s === 'G') return '#ffe880';
+  if (s === 'K') return '#ffb050';
+  if (s === 'M') return '#ff6030';
+  if (s === 'W') return '#80ffcc';
+  if (s === 'L') return '#ff4020';
+  return '#ffffff';
+}
+
+let currentJD, currentLST;
+
+function render() {
+  if (!canvas.width) resize();
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const now = new Date();
+  currentJD = getJD(now);
+  currentLST = getLST(currentJD, state.lon);
+
+  // Fondo degradado
+  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H)*0.7);
+  bg.addColorStop(0, '#020818');
+  bg.addColorStop(1, '#000205');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Vía Láctea
+  if (state.milkyway) drawMilkyWay(currentLST);
+
+  // Grid coordenadas
+  if (state.grid) drawGrid(currentLST);
+
+  // Horizonte
+  if (state.horizon) drawHorizon();
+
+  // Líneas de constelaciones
+  if (state.constellations) drawConstellations(currentLST);
+
+  // Estrellas
+  drawStars(currentLST);
+
+  // Meridiano y puntos cardinales
+  drawCardinals();
+
+  // Actualizar UI de tiempo
+  updateTimeDisplay(now, currentJD, currentLST);
+}
+
+function drawMilkyWay(lst) {
+  // Banda aproximada de la Vía Láctea (galactic plane)
+  // l=0..360, b=0 en plano galáctico
+  // Polo galáctico: α=12h51m, δ=+27.13° (J2000)
+  // Simplificado: dibujamos una banda parametrizada
+  ctx.save();
+  for (let l = 0; l < 360; l += 3) {
+    // convertir coords galácticas a ecuatoriales (simplificado)
+    const lR = toRad(l), bR = 0;
+    // Transformación galáctica → ecuatorial (aproximada)
+    const NGC = { ra: toRad(12.8667*15), dec: toRad(27.4) }; // polo N galáctico
+    const l0 = toRad(123); // longitud del polo galáctico en coords ecuatoriales
+    
+    const sinDec = Math.sin(bR)*Math.sin(NGC.dec) + Math.cos(bR)*Math.cos(NGC.dec)*Math.sin(lR - l0);
+    const dec = Math.asin(Math.max(-1, Math.min(1, sinDec)));
+    const cosRA = Math.cos(bR)*Math.cos(lR - l0);
+    const sinRA = Math.sin(bR)*Math.cos(NGC.dec) - Math.cos(bR)*Math.sin(NGC.dec)*Math.sin(lR - l0);
+    const ra = toDeg(Math.atan2(cosRA, sinRA) + NGC.ra) / 15;
+    const raH = ((ra % 24) + 24) % 24;
+    const decD = toDeg(dec);
+    
+    const pos = raDecToAzAlt(raH, decD, lst, state.lat);
+    if (pos.alt < -5) continue;
+    const px = project(pos.az, pos.alt);
+    if (!px) continue;
+    
+    // Ancho variable de la Vía Láctea
+    const width = (l > 260 && l < 360) || l < 60 ? 35 : 18; // más ancha en el centro galáctico
+    const alpha = (l > 270 && l < 340) ? 0.04 : 0.02;
+    
+    const grad = ctx.createRadialGradient(px.x, px.y, 0, px.x, px.y, width * (90/state.fov));
+    grad.addColorStop(0, `rgba(180,200,255,${alpha})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(px.x, px.y, width * (90/state.fov), 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawGrid(lst) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(74,158,255,0.15)';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([4, 8]);
+  
+  // Paralelos de declinación
+  for (let dec = -80; dec <= 80; dec += 15) {
+    ctx.beginPath();
+    let first = true;
+    for (let ra = 0; ra <= 24; ra += 0.25) {
+      const pos = raDecToAzAlt(ra, dec, lst, state.lat);
+      if (pos.alt < -1) { first = true; continue; }
+      const px = project(pos.az, pos.alt);
+      if (!px) { first = true; continue; }
+      if (first) { ctx.moveTo(px.x, px.y); first = false; }
+      else ctx.lineTo(px.x, px.y);
+    }
+    ctx.stroke();
+  }
+  
+  // Meridianos de AR
+  for (let ra = 0; ra < 24; ra += 2) {
+    ctx.beginPath();
+    let first = true;
+    for (let dec = -90; dec <= 90; dec += 2) {
+      const pos = raDecToAzAlt(ra, dec, lst, state.lat);
+      if (pos.alt < -1) { first = true; continue; }
+      const px = project(pos.az, pos.alt);
+      if (!px) { first = true; continue; }
+      if (first) { ctx.moveTo(px.x, px.y); first = false; }
+      else ctx.lineTo(px.x, px.y);
+    }
+    ctx.stroke();
+    
+    // Etiquetas de AR
+    const testPos = raDecToAzAlt(ra, 0, lst, state.lat);
+    if (testPos.alt > 5) {
+      const px = project(testPos.az, testPos.alt);
+      if (px) {
+        ctx.fillStyle = 'rgba(74,158,255,0.5)';
+        ctx.font = '9px Space Mono';
+        ctx.fillText(`${ra}h`, px.x+2, px.y-2);
+      }
+    }
+  }
+  
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawHorizon() {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(68,255,136,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 10]);
+  ctx.beginPath();
+  let first = true;
+  for (let az = 0; az <= 361; az += 2) {
+    const px = project(az % 360, 0);
+    if (!px) { first = true; continue; }
+    if (first) { ctx.moveTo(px.x, px.y); first = false; }
+    else ctx.lineTo(px.x, px.y);
+  }
+  ctx.stroke();
+  
+  // Relleno por debajo del horizonte
+  ctx.fillStyle = 'rgba(0,8,0,0.5)';
+  ctx.beginPath();
+  first = true;
+  for (let az = 0; az <= 361; az += 3) {
+    const px = project(az % 360, 0);
+    if (!px) { first = true; continue; }
+    if (first) { ctx.moveTo(px.x, px.y); first = false; }
+    else ctx.lineTo(px.x, px.y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawConstellations(lst) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(74,120,200,0.35)';
+  ctx.lineWidth = 0.8;
+  
+  const starMap = {};
+  STARS.forEach(s => { starMap[s[0]] = s; });
+  
+  for (const [cons, lines] of Object.entries(CONST_LINES)) {
+    for (const [a, b] of lines) {
+      const sA = starMap[a], sB = starMap[b];
+      if (!sA || !sB) continue;
+      const pA = raDecToAzAlt(sA[2], sA[3], lst, state.lat);
+      const pB = raDecToAzAlt(sB[2], sB[3], lst, state.lat);
+      if (pA.alt < -5 || pB.alt < -5) continue;
+      const pxA = project(pA.az, pA.alt);
+      const pxB = project(pB.az, pB.alt);
+      if (!pxA || !pxB) continue;
+      ctx.beginPath();
+      ctx.moveTo(pxA.x, pxA.y);
+      ctx.lineTo(pxB.x, pxB.y);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawStars(lst) {
+  STARS.forEach((star, idx) => {
+    const [name, cons, ra, dec, mag, spectral, fullName] = star;
+    if (mag > state.magLimit) return;
+    
+    const pos = raDecToAzAlt(ra, dec, lst, state.lat);
+    if (pos.alt < -2) return;
+    
+    const px = project(pos.az, pos.alt);
+    if (!px) return;
+    if (px.x < -10 || px.x > canvas.width+10 || px.y < -10 || px.y > canvas.height+10) return;
+    
+    const size = starSize(mag);
+    const color = starColor(spectral);
+    const isSelected = state.selected && state.selected[0] === name;
+    
+    // Brillo atmosférico para estrellas brillantes
+    if (mag < 2) {
+      const glow = ctx.createRadialGradient(px.x, px.y, 0, px.x, px.y, size*4);
+      glow.addColorStop(0, color.replace(')', ',0.3)').replace('rgb', 'rgba'));
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(px.x, px.y, size*4, 0, Math.PI*2);
+      ctx.fill();
+    }
+    
+    // Selección
+    if (isSelected) {
+      ctx.strokeStyle = '#4a9eff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(px.x, px.y, size+4, 0, Math.PI*2);
+      ctx.stroke();
+      
+      // Cruz de mira
+      ctx.strokeStyle = 'rgba(74,158,255,0.7)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(px.x-12, px.y); ctx.lineTo(px.x+12, px.y);
+      ctx.moveTo(px.x, px.y-12); ctx.lineTo(px.x, px.y+12);
+      ctx.stroke();
+    }
+    
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(px.x, px.y, size, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Nombre
+    if (state.starNames && mag < 2.5) {
+      ctx.fillStyle = isSelected ? '#e8f4ff' : 'rgba(138,180,212,0.7)';
+      ctx.font = isSelected ? 'bold 11px Space Mono' : '10px Space Mono';
+      ctx.fillText(name, px.x + size + 3, px.y - 2);
+    }
+  });
+}
+
+function drawCardinals() {
+  const dirs = [
+    { az: 0,   label: 'N' },
+    { az: 90,  label: 'E' },
+    { az: 180, label: 'S' },
+    { az: 270, label: 'O' },
+  ];
+  
+  dirs.forEach(({ az, label }) => {
+    const px = project(az, 0);
+    if (!px) return;
+    ctx.fillStyle = '#44ff88';
+    ctx.font = 'bold 13px Cinzel';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, px.x, px.y - 8);
+    ctx.textAlign = 'left';
+  });
+  
+  // Zenit
+  const zenith = project(state.viewAz, 90);
+  if (zenith) {
+    ctx.fillStyle = 'rgba(200,168,75,0.5)';
+    ctx.beginPath();
+    ctx.arc(zenith.x, zenith.y, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function updateTimeDisplay(now, jd, lstDeg) {
+  const utc = now.toUTCString().split(' ')[4];
+  document.getElementById('utc-time').textContent = utc;
+  document.getElementById('lst-time').textContent = formatLST(lstDeg);
+  document.getElementById('jd-display').textContent = `JD ${jd.toFixed(5)}`;
+}
+
+// ─────────────────────────────────────────
+// INTERACTIVIDAD
+// ─────────────────────────────────────────
+
+function canvasToSky(x, y) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const scale = Math.min(W, H) / 2 * (90 / state.fov);
+  
+  const dx = x - cx, dy = cy - y;
+  const r = Math.sqrt(dx*dx + dy*dy);
+  const angle = Math.atan2(dx, dy); // azimut relativo
+  
+  if (r > scale * 2) return null;
+  
+  // Proyección inversa estereográfica
+  const theta = 2 * Math.atan(r / scale); // separación angular del centro
+  
+  const vAzR = toRad(state.viewAz), vAltR = toRad(state.viewAlt);
+  
+  const sinAlt = Math.cos(theta)*Math.sin(vAltR) + Math.sin(theta)*Math.cos(vAltR)*Math.cos(angle);
+  const alt = toDeg(Math.asin(Math.max(-1, Math.min(1, sinAlt))));
+  
+  const cosAzDelta = (Math.cos(theta) - Math.sin(toRad(alt))*Math.sin(vAltR)) / (Math.cos(toRad(alt))*Math.cos(vAltR));
+  let azDelta = toDeg(Math.acos(Math.max(-1, Math.min(1, cosAzDelta))));
+  if (Math.sin(angle) < 0) azDelta = -azDelta;
+  const az = ((state.viewAz + azDelta) % 360 + 360) % 360;
+  
+  return { az, alt };
+}
+
+function findNearestStar(az, alt, lst) {
+  let nearest = null, minDist = 1.5; // max 1.5 grados
+  STARS.forEach(star => {
+    if (star[4] > state.magLimit) return;
+    const pos = raDecToAzAlt(star[2], star[3], lst, state.lat);
+    if (pos.alt < -2) return;
+    let dAz = Math.abs(pos.az - az); if (dAz > 180) dAz = 360 - dAz;
+    const dAlt = Math.abs(pos.alt - alt);
+    const dist = Math.sqrt(dAz*dAz + dAlt*dAlt);
+    if (dist < minDist) { minDist = dist; nearest = star; }
+  });
+  return nearest;
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * canvas.width / rect.width;
+  const y = (e.clientY - rect.top) * canvas.height / rect.height;
+  
+  if (state.isDragging && state.dragStart) {
+    const dx = e.clientX - state.dragStart.x;
+    const dy = e.clientY - state.dragStart.y;
+    const sensitivity = state.fov / 1000;
+    state.viewAz = ((state.viewAz - dx * sensitivity * 2) % 360 + 360) % 360;
+    state.viewAlt = Math.max(0, Math.min(89, state.viewAlt + dy * sensitivity));
+    state.dragStart = { x: e.clientX, y: e.clientY };
+    return;
+  }
+  
+  const sky = canvasToSky(x, y);
+  if (!sky) return;
+  
+  state.mouseAz = sky.az;
+  state.mouseAlt = sky.alt;
+  
+  const radec = azAltToRaDec(sky.az, sky.alt, currentLST, state.lat);
+  state.mouseRA = radec.ra;
+  state.mouseDec = radec.dec;
+  
+  document.getElementById('cx-az').textContent = formatAz(sky.az);
+  document.getElementById('cx-alt').textContent = formatAlt(sky.alt);
+  document.getElementById('cx-ra').textContent = formatRA(radec.ra);
+  document.getElementById('cx-dec').textContent = formatDec(radec.dec);
+  document.getElementById('s-az').textContent = formatAz(sky.az);
+  document.getElementById('s-alt').textContent = formatAlt(sky.alt);
+  document.getElementById('s-ra').textContent = formatRA(radec.ra);
+  document.getElementById('s-dec').textContent = formatDec(radec.dec);
+  
+  // Tooltip hover cerca de estrella
+  const near = findNearestStar(sky.az, sky.alt, currentLST);
+  const tooltip = document.getElementById('tooltip');
+  if (near && near[4] <= state.magLimit) {
+    const pos = raDecToAzAlt(near[2], near[3], currentLST, state.lat);
+    if (pos.alt > 0) {
+      const px = project(pos.az, pos.alt);
+      if (px) {
+        tooltip.style.display = 'block';
+        tooltip.style.left = px.x + 'px';
+        tooltip.style.top = px.y + 'px';
+        tooltip.textContent = `${near[0]} (mag ${near[4]})`;
+      }
+    }
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  state.isDragging = true;
+  state.dragStart = { x: e.clientX, y: e.clientY };
+  canvas.style.cursor = 'grabbing';
+});
+
+canvas.addEventListener('mouseup', () => {
+  state.isDragging = false;
+  canvas.style.cursor = 'crosshair';
+});
+
+canvas.addEventListener('mouseleave', () => {
+  state.isDragging = false;
+  canvas.style.cursor = 'crosshair';
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * canvas.width / rect.width;
+  const y = (e.clientY - rect.top) * canvas.height / rect.height;
+  
+  const sky = canvasToSky(x, y);
+  if (!sky) return;
+  
+  const near = findNearestStar(sky.az, sky.alt, currentLST);
+  if (near) {
+    state.selected = near;
+    showStarInfo(near);
+  } else {
+    state.selected = null;
+    document.getElementById('star-info').innerHTML = '<div class="no-selection">Haz clic en una estrella para ver sus coordenadas y datos</div>';
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  state.fov = Math.max(20, Math.min(180, state.fov + e.deltaY * 0.1));
+  document.getElementById('zoom-slider').value = state.fov;
+  document.getElementById('fov-display').textContent = state.fov.toFixed(0) + '°';
+});
+
+function showStarInfo(star) {
+  const [name, cons, ra, dec, mag, spectral, fullName] = star;
+  const pos = raDecToAzAlt(ra, dec, currentLST, state.lat);
+  const raDec = { ra, dec };
+  
+  const html = `
+    <div class="star-name">✦ ${name}</div>
+    <div class="star-designation">${fullName || cons}</div>
+    <div class="star-detail">
+      <div>Magnitud <span>${mag}</span></div>
+      <div>Tipo estelar <span>${spectral}</span></div>
+      <div style="border-top:1px solid rgba(74,158,255,0.2);margin:6px 0;padding-top:6px;">
+      <div style="color:var(--accent);font-size:10px;margin-bottom:4px;">— COORDENADAS HORIZONTALES —</div>
+      <div>Azimut <span>${formatAz(pos.az)}</span></div>
+      <div>Altitud <span>${formatAlt(pos.alt)}</span></div>
+      <div style="margin-top:6px;color:var(--gold);font-size:10px;">— COORDENADAS ECUATORIALES —</div>
+      <div style="margin-top:4px;">Asc. Recta <span>${formatRA(ra)}</span></div>
+      <div>Declinación <span>${formatDec(dec)}</span></div>
+      </div>
+      <div style="margin-top:6px;opacity:0.5;font-size:10px;">${pos.alt > 0 ? '▲ VISIBLE ahora' : '▼ Bajo el horizonte'}</div>
+    </div>
+  `;
+  document.getElementById('star-info').innerHTML = html;
+}
+
+// ─────────────────────────────────────────
+// CONTROLES
+// ─────────────────────────────────────────
+
+function toggle(prop, btn) {
+  state[prop] = !state[prop];
+  btn.textContent = state[prop] ? 'ON' : 'OFF';
+  btn.className = 'toggle-btn' + (state[prop] ? ' active' : '');
+}
+
+function setFov(v) {
+  state.fov = parseFloat(v);
+  document.getElementById('fov-display').textContent = parseFloat(v).toFixed(0) + '°';
+}
+
+function setMagLimit(v) {
+  state.magLimit = parseFloat(v);
+  document.getElementById('mag-display').textContent = v;
+}
+
+function applyLocation() {
+  state.lat = parseFloat(document.getElementById('inp-lat').value);
+  state.lon = parseFloat(document.getElementById('inp-lon').value);
+  document.getElementById('loc-name').textContent = `Lat ${state.lat.toFixed(3)}°, Lon ${state.lon.toFixed(3)}°`;
+}
+
+function geoLocate() {
+  if (!navigator.geolocation) {
+    alert('Geolocalización no disponible en este navegador.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.lat = pos.coords.latitude;
+    state.lon = pos.coords.longitude;
+    document.getElementById('inp-lat').value = state.lat.toFixed(4);
+    document.getElementById('inp-lon').value = state.lon.toFixed(4);
+    document.getElementById('loc-name').textContent = `GPS: ${state.lat.toFixed(3)}°, ${state.lon.toFixed(3)}°`;
+  }, () => {
+    alert('No se pudo obtener la ubicación.');
+  });
+}
+
+// ─────────────────────────────────────────
+// BUCLE PRINCIPAL
+// ─────────────────────────────────────────
+window.addEventListener('resize', resize);
+resize();
+
+function loop() {
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

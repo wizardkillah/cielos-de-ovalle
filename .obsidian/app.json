@@ -1,0 +1,10 @@
+{
+  "showUnsupportedFiles": true,
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "current",
+  "attachmentFolderPath": "99 Archivo/Adjuntos",
+  "readableLineLength": true,
+  "defaultViewMode": "preview",
+  "livePreview": true,
+  "userIgnoreFilters": ["App/fuente/tests/reference.json"]
+}

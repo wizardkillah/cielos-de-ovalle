@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#02070b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Mapa del cielo en tiempo real para visitantes de observatorios del Limarí y la Región de Coquimbo.">
+<title>Cielos de Ovalle — Mapa del cielo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2302070b'/%3E%3Cpath d='M32 10v44M10 32h44' stroke='%2346f0be' stroke-width='2' opacity='.5'/%3E%3Ccircle cx='32' cy='18' r='4' fill='%23ffc861'/%3E%3Ccircle cx='32' cy='48' r='5' fill='%23cfe0ff'/%3E%3Ccircle cx='20' cy='30' r='4' fill='%23cfe0ff'/%3E%3Ccircle cx='45' cy='33' r='4' fill='%23cfe0ff'/%3E%3C/svg%3E">
+<!-- Fuentes opcionales: si no hay conexión, se usan las del sistema -->
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/*{{CSS}}*/
+</style>
+</head>
+<body>
+<video id="cam" playsinline muted></video>
+<canvas id="view" aria-label="Mapa del cielo"></canvas>
+
+<header id="top">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3v26M3 16h26" /><circle cx="16" cy="8" r="2.2"/><circle cx="16" cy="25" r="2.8"/><circle cx="9.5" cy="15" r="2.2"/><circle cx="23" cy="16.5" r="2.2"/></svg><span>Cielos<br>de Ovalle</span></div>
+  <nav class="seg" aria-label="Modo"><button id="m-sky" class="on"></button><button id="m-cosmos"></button></nav>
+  <div class="tools"><button id="b-red" class="ic"></button><button id="b-lang" class="ic txt">EN</button><button id="b-help" class="ic txt">?</button></div>
+</header>
+<div id="chips"><button id="c-place" class="chip"></button><button id="c-time" class="chip"></button></div>
+<div id="heading" aria-live="off"></div>
+<div id="banner" role="status"></div>
+
+<div id="rail">
+  <button id="b-sensor" class="ic"></button>
+  <button id="b-cam" class="ic"></button>
+  <button id="b-in" class="ic"></button>
+  <button id="b-out" class="ic"></button>
+</div>
+
+<footer id="dock">
+  <div class="sky-dock">
+    <button id="b-tonight" class="side"></button>
+    <button id="b-what" class="cta"></button>
+    <button id="b-layers" class="side"></button>
+  </div>
+  <div class="cosmos-dock"><div id="stops"></div></div>
+</footer>
+
+<section id="sheet" aria-live="polite">
+  <div class="grip"></div>
+  <div class="sheet-head"><h2 id="sheet-title"></h2><button id="sheet-close" class="ic">×</button></div>
+  <div id="sheet-body"></div>
+</section>
+<div id="toast" role="status"></div>
+<div id="welcome"></div>
+<div id="redveil" aria-hidden="true"></div>
+<noscript>Esta aplicación necesita JavaScript.</noscript>
+<script>
+/*{{JS}}*/
+</script>
+</body>
+</html>

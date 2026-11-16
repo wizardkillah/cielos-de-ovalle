@@ -1,0 +1,18 @@
+/* Aspecto de la bóveda Cielos de Ovalle: mismo lenguaje visual que la app */
+.theme-dark {
+  --background-primary: #050e13;
+  --background-secondary: #030a0e;
+  --background-modifier-border: rgba(70, 240, 190, 0.16);
+  --text-normal: #dde9ec;
+  --text-muted: #8ea7ad;
+  --interactive-accent: #46f0be;
+  --text-on-accent: #012018;
+  --link-color: #46f0be;
+  --link-color-hover: #ffc861;
+  --h1-color: #ffffff; --h2-color: #46f0be; --h3-color: #ffc861;
+}
+.markdown-rendered h1 { letter-spacing: -0.01em; }
+.markdown-rendered h2 { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.95em; border-bottom: 1px solid rgba(70, 240, 190, 0.2); padding-bottom: 4px; }
+.markdown-rendered table { font-variant-numeric: tabular-nums; }
+.markdown-rendered th { color: #46f0be; }
+.markdown-rendered img { border-radius: 14px; border: 1px solid rgba(70, 240, 190, 0.2); }
