@@ -5,7 +5,6 @@
 /App/fuente/dist/
 
 # Estado local de Obsidian y de herramientas
-/.obsidian/workspace.json
 /.claude/
 __pycache__/
 *.pyc
@@ -24,3 +23,7 @@ Thumbs.db
 /Android/android/app/src/main/assets/capacitor.plugins.json
 /Android/gradle.log
 /Android/*.apk
+
+# Config personal de Obsidian (la bóveda se abre desde docs/)
+/.obsidian/
+/docs/.obsidian/
