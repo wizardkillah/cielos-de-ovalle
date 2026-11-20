@@ -2,7 +2,7 @@
 
 Mapa del cielo en tiempo real para quien visita un observatorio del Limarí (Región de Coquimbo, Chile) y quiere saber **qué está mirando**. Un solo archivo HTML de 342 kB, sin dependencias, sin servidor y sin conexión; en español e inglés.
 
-![Cielo austral con el puntero de la Cruz del Sur al polo sur celeste](99%20Archivo/Adjuntos/app-polo-sur.jpg)
+![Cielo austral con el puntero de la Cruz del Sur al polo sur celeste](docs/99%20Archivo/Adjuntos/app-polo-sur.jpg)
 
 ## Qué hace
 
@@ -26,7 +26,7 @@ JavaScript clásico sin librerías ni empaquetador, para que abra en teléfonos 
 
 ## Usarla
 
-Abre `App/cielos-de-ovalle.html` en cualquier navegador. La brújula, la cámara y el GPS necesitan que esté publicada en `https` (ver `04 Guías/Publicar la app.md`).
+Abre `App/cielos-de-ovalle.html` en cualquier navegador. La brújula, la cámara y el GPS necesitan que esté publicada en `https` (ver `docs/04 Guías/Publicar la app.md`).
 
 ## Desarrollar
 
@@ -38,23 +38,24 @@ python tests/smoke.py                    # app en Chromium (pip install playwrig
 cp dist/cielos-de-ovalle.html ..         # reemplaza la app publicada
 ```
 
-## El repositorio es también una bóveda de Obsidian
+## Documentación
 
-Ábrelo como bóveda y empieza por `Inicio.md`.
+La carpeta `docs/` es una bóveda de Obsidian (ábrela como bóveda y empieza por `Inicio.md`), pero son archivos Markdown que también se leen directo en GitHub.
 
 | Carpeta | Contenido |
 |---|---|
-| `01 Proyecto` | Visión, decisiones de diseño con su motivo y su costo, hoja de ruta, historial |
-| `02 Auditoría` | Revisión de los seis prototipos anteriores y los errores encontrados |
-| `03 Arquitectura` | Motor, proyección, sensores, catálogo, precisión y pruebas |
-| `04 Guías` | Uso, publicación y guion para guías de observatorio |
-| `05 Cielo austral` | Calendario 2026–2027, cielo por estaciones, 62 fichas de objetos |
-| `App` | La aplicación y su código fuente |
-| `99 Archivo` | Prototipos anteriores y capturas |
+| `docs/01 Proyecto` | Visión, decisiones de diseño con su motivo y su costo, hoja de ruta, historial |
+| `docs/02 Auditoría` | Revisión de los seis prototipos anteriores y los errores encontrados |
+| `docs/03 Arquitectura` | Motor, proyección, sensores, catálogo, precisión y pruebas |
+| `docs/04 Guías` | Uso, publicación y guion para guías de observatorio |
+| `docs/05 Cielo austral` | Calendario 2026–2027, cielo por estaciones, 62 fichas de objetos |
+| `docs/99 Archivo` | Prototipos anteriores y capturas |
+| `App/` | La aplicación y su código fuente |
+| `Android/` | Envoltorio Android (Capacitor) |
 
 ## Estado
 
-Versión 1.1. Pendiente antes de usarla con público: publicarla en `https` y probar brújula y cámara en teléfonos reales. Detalle en `01 Proyecto/Hoja de ruta.md`.
+Versión 1.1. Pendiente antes de usarla con público: publicarla en `https` y probar brújula y cámara en teléfonos reales. Detalle en `docs/01 Proyecto/Hoja de ruta.md`.
 
 ## Autor y licencia
 
