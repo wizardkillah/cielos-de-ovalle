@@ -56,6 +56,12 @@ cp dist/cielos-de-ovalle.html ..         # reemplaza la app publicada
 
 Versión 1.1. Pendiente antes de usarla con público: publicarla en `https` y probar brújula y cámara en teléfonos reales. Detalle en `01 Proyecto/Hoja de ruta.md`.
 
+## Autor y licencia
+
+Diseño, motor astronómico, aplicación y contenido: **Francois Rojo**.
+
+El código y el contenido propios se publican con licencia MIT (ver [`LICENSE`](LICENSE)). Los datos y las tipografías de terceros mantienen sus propias licencias, indicadas abajo.
+
 ## Créditos
 
 - Catálogo estelar y figuras: d3-celestial, © 2015 Olaf Frohn, BSD-3-Clause (`App/fuente/LICENCIA-d3-celestial.txt`).

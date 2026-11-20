@@ -1,6 +1,6 @@
 /* Service worker de Cielos de Ovalle: deja la app disponible sin conexión.
    Sube el número de versión cada vez que publiques un HTML nuevo. */
-var CACHE = 'cielos-ovalle-v1.1.0';
+var CACHE = 'cielos-ovalle-v1.1.1';
 var FILES = ['./', './cielos-de-ovalle.html', './manifest.webmanifest', './icono.svg'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
