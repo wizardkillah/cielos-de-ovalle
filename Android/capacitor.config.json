@@ -1,0 +1,7 @@
+{
+  "appId": "cl.cielosdeovalle.app",
+  "appName": "Cielos de Ovalle",
+  "webDir": "www",
+  "backgroundColor": "#02070b",
+  "android": { "allowMixedContent": false }
+}

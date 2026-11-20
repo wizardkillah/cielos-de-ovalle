@@ -11,3 +11,16 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Envoltorio Android: dependencias y salidas de compilación
+/Android/node_modules/
+/Android/www/
+/Android/android/.gradle/
+/Android/android/build/
+/Android/android/app/build/
+/Android/android/local.properties
+/Android/android/app/src/main/assets/public/
+/Android/android/app/src/main/assets/capacitor.config.json
+/Android/android/app/src/main/assets/capacitor.plugins.json
+/Android/gradle.log
+/Android/*.apk
