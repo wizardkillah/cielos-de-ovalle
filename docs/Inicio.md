@@ -8,7 +8,7 @@ fecha: 2026-11-16
 Mapa del cielo en tiempo real para quien visita un observatorio del Limarí y quiere saber **qué está mirando**. Funciona en cualquier navegador, sin instalación, sin conexión y en español e inglés.
 
 > [!success] Abrir la app
-> **[Cielos de Ovalle — abrir en el navegador](App/cielos-de-ovalle.html)**
+> **[Cielos de Ovalle — abrir en el navegador](../App/cielos-de-ovalle.html)**
 > Es un único archivo de 342 kB. También puedes hacer doble clic sobre `App/cielos-de-ovalle.html` desde el explorador de archivos.
 
 ![[app-polo-sur.jpg]]

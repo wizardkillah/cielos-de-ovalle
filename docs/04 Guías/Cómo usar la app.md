@@ -3,7 +3,7 @@ tags: [guia]
 ---
 # Cómo usar la app
 
-**[Abrir Cielos de Ovalle](../App/cielos-de-ovalle.html)**
+**[Abrir Cielos de Ovalle](../../App/cielos-de-ovalle.html)**
 
 ## En 30 segundos
 1. **Arrastra** para recorrer el cielo; al soltar sigue girando un momento. **Pellizca** (o usa la rueda del ratón) para acercar, o da un **doble toque** sobre un punto.
